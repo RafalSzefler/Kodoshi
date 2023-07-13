@@ -56,7 +56,7 @@ internal sealed class ModelsGenerator
             .Append("  <ItemGroup>\n")
             .Append("    <PackageReference Include=\"System.IO.Pipelines\" Version=\"6.*-*\" />\n")
             .Append("    <PackageReference Include=\"System.Collections.Immutable\" Version=\"8.*-*\" />\n")
-            .Append("    <ProjectReference Include=\"..\\..\\..\\Libs\\CSharp\\Kodoshi.Core\\Kodoshi.Core.csproj\" />\n")
+            .Append("    <PackageReference Include=\"Kodoshi.Core\" Version=\"1.*-*\" />\n")
             .Append("  </ItemGroup>\n\n")
             .Append("</Project>\n")
             .ToString();

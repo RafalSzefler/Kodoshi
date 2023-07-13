@@ -54,11 +54,13 @@ internal sealed class ASTToProjectConverter
         FillIdentifiers();
         SortTopologically();
         var models = BuildModels();
-        return new Project(
+        var project = new Project(
             _settings.ProjectName!,
             _settings.Version!,
             models,
             Array.Empty<ServiceDefinition>());
+        ValidateProject(project);
+        return project;
     }
 
     private void FillIdentifiers()
@@ -442,6 +444,16 @@ internal sealed class ASTToProjectConverter
                 {
                     templateArgs.Add(Map(arg));
                 }
+                if (object.ReferenceEquals(msg, BuiltIns.ArrayModel) || object.ReferenceEquals(msg, BuiltIns.MapModel))
+                {
+                    foreach (var templateArg in templateArgs)
+                    {
+                        if (templateArg is MessageReference templateRef && object.ReferenceEquals(templateRef.Definition, BuiltIns.VoidModel))
+                        {
+                            throw new ParsingException($"Builtin model {msg.FullName.Name} cannot be declared with {BuiltIns.VoidModel.FullName.Name} template argument.");
+                        }
+                    }
+                }
                 return new MessageTemplateReference(msg, templateArgs);
             }
             case ModelKind.Tag:
@@ -463,6 +475,54 @@ internal sealed class ASTToProjectConverter
                 return new TagTemplateReference(msg, templateArgs);
             }
             default: throw new NotImplementedException();
+        }
+    }
+
+    private void ValidateProject(Project project)
+    {
+        var duplicates = new HashSet<int>();
+        foreach (var model in project.Models)
+        {
+            duplicates.Clear();
+            IEnumerable<int> ids;
+            switch (model.Kind)
+            {
+                case ModelKind.Message:
+                {
+                    ids = ((MessageDefinition)model).Fields.Select(x => x.Id);
+                    break;
+                }
+                case ModelKind.MessageTemplate:
+                {
+                    ids = ((MessageTemplateDefinition)model).Fields.Select(x => x.Id);
+                    break;
+                }
+                case ModelKind.Tag:
+                {
+                    ids = ((TagDefinition)model).Fields.Select(x => x.Value);
+                    break;
+                }
+                case ModelKind.TagTemplate:
+                {
+                    ids = ((TagTemplateDefinition)model).Fields.Select(x => x.Value);
+                    break;
+                }
+                default: throw new NotImplementedException();
+            }
+
+            foreach (var id in ids)
+            {
+                if (duplicates.Contains(id))
+                {
+                    var name = model.FullName.Name;
+                    if (!string.IsNullOrEmpty(model.FullName.Namespace))
+                    {
+                        name = $"{model.FullName.Namespace}.{model.FullName}";
+                    }
+                    throw new ParsingException($"Model {name} contains fields with duplicate ids/values.");
+                }
+                duplicates.Add(id);
+            }
         }
     }
 }
