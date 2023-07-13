@@ -7,16 +7,16 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Kodoshi.CodeGenerator.CSharp;
+namespace Kodoshi.CodeGenerator.CSharp.Models;
 
 internal sealed class ModelsFileGenerator
 {
-    private readonly InputContext _intputContext;
+    private readonly ProjectContext _intputContext;
     private readonly GenerationContext _context;
     private readonly Helpers _helpers;
 
     public ModelsFileGenerator(
-        InputContext inputContext,
+        ProjectContext inputContext,
         GenerationContext context,
         Helpers helpers)
     {

@@ -8,11 +8,31 @@ namespace Kodoshi.CodeGenerator.Core.FileSystem;
 
 public sealed class FileImpl : IFile
 {
+    public static async ValueTask<FileImpl> OpenFile(string path, CancellationToken ct)
+    {
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException("File doesn't exist", path);
+        }
+        var basePath = Path.GetDirectoryName(path);
+        if (string.IsNullOrEmpty(basePath))
+        {
+            throw new InvalidOperationException("Directory path is empty. Fail.");
+        }
+        var folder = await FolderImpl.OpenOrCreateFolder(basePath, ct);
+        return new FileImpl(folder, path);
+    }
+
     private readonly string _path;
 
-    public FileImpl(string path)
+    public string Name => Path.GetFileName(_path);
+    public string FullName => _path;
+    public IFolder ParentFolder { get; }
+
+    public FileImpl(IFolder parent, string path)
     {
-        _path = path;
+        _path = Path.GetFullPath(path);
+        ParentFolder = parent;
     }
 
     public async ValueTask<ReadOnlyMemory<byte>> Read(CancellationToken ct)

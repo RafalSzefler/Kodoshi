@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Kodoshi.CodeGenerator.CSharp.Client;
+using Kodoshi.CodeGenerator.CSharp.Models;
+using Kodoshi.CodeGenerator.CSharp.Server;
 using Kodoshi.CodeGenerator.Entities;
 using Kodoshi.CodeGenerator.FileSystem;
 
@@ -24,9 +27,14 @@ internal sealed class CSharpCodeGenerator : ICodeGenerator
     public string Version => _assemblyVersion;
 
     public async ValueTask GenerateFromContext(
-        InputContext inputContext,
+        ProjectContext inputContext,
         CancellationToken ct)
     {
+        if (inputContext.Project.Models.Count == 0)
+        {
+            return;
+        }
+
         foreach (var model in inputContext.Project.Models)
         {
             if (model.FullName.Namespace == "System" || model.FullName.Namespace.StartsWith("System."))
@@ -51,7 +59,7 @@ internal sealed class CSharpCodeGenerator : ICodeGenerator
         await Task.WhenAll(tasks);
     }
 
-    private static async Task<IFolder> GetFolder(InputContext inputContext, string folderName, CancellationToken ct)
+    private static async Task<IFolder> GetFolder(ProjectContext inputContext, string folderName, CancellationToken ct)
     {
         var root = inputContext.OutputFolder;
         if (await root.Exists(folderName, ct))
@@ -61,10 +69,10 @@ internal sealed class CSharpCodeGenerator : ICodeGenerator
         return await root.CreateFolder(folderName, ct);
     }
 
-    private static GenerationContext BuildGenerationContext(InputContext inputContext, CancellationToken ct)
+    private static GenerationContext BuildGenerationContext(ProjectContext inputContext, CancellationToken ct)
     {
         string nmspc;
-        if (!inputContext.AdditionalSettings.TryGetValue("ProjectName", out nmspc))
+        if (!inputContext.AdditionalSettings.TryGetValue("GlobalNamespace", out nmspc))
         {
             nmspc = "KodoshiGenerated";
         }

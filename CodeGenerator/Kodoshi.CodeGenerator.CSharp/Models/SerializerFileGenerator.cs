@@ -9,11 +9,11 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Kodoshi.CodeGenerator.CSharp;
+namespace Kodoshi.CodeGenerator.CSharp.Models;
 
 internal sealed class SerializerFileGenerator
 {
-    private readonly InputContext _intputContext;
+    private readonly ProjectContext _intputContext;
     private readonly GenerationContext _context;
     private readonly Helpers _helpers;
     private readonly Dictionary<Entities.Identifier, string> _modelNameToSerializerNameMap;
@@ -21,7 +21,7 @@ internal sealed class SerializerFileGenerator
     private readonly Dictionary<string, ModelReference> _serializersToReferences = new Dictionary<string, ModelReference>();
 
     public SerializerFileGenerator(
-        InputContext inputContext,
+        ProjectContext inputContext,
         GenerationContext context,
         Helpers helpers)
     {
@@ -261,6 +261,7 @@ namespace KodoshiGenerated.Core
             var _doubleSerializer = new Kodoshi.Core.BuiltIns.DoubleSerializer();
             var _guidSerializer = new Kodoshi.Core.BuiltIns.GuidSerializer();
 
+            _serializers[typeof(Kodoshi.Core.VoidType)] = Kodoshi.Core.BuiltIns.VoidTypeSerializer.Instance;
             _serializers[typeof(sbyte)] = _numericSerializer;
             _serializers[typeof(byte)] = _numericSerializer;
             _serializers[typeof(short)] = _numericSerializer;

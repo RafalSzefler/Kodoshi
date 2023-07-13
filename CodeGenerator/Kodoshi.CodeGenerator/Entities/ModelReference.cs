@@ -1,10 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 
 namespace Kodoshi.CodeGenerator.Entities;
 
-public abstract class ModelReference : IEquatable<ModelReference>
+public abstract class ModelReference
 {
     public ModelReferenceKind Kind { get; }
     private int ReferenceId { get; }
@@ -15,32 +14,6 @@ public abstract class ModelReference : IEquatable<ModelReference>
         Kind = kind;
         ReferenceId = Interlocked.Increment(ref _globalCounter);
     }
-
-    public bool Equals(ModelReference other)
-    {
-        #nullable disable
-        if (this is null && other is null)
-        {
-            return true;
-        }
-        if (this is null || other is null)
-        {
-            return false;
-        }
-        return this.ReferenceId == other.ReferenceId;
-        #nullable restore
-    }
-
-    public override bool Equals(object obj)
-        => obj is ModelReference model && Equals(model);
-
-    public override int GetHashCode() => ReferenceId.GetHashCode();
-
-    public static bool operator==(ModelReference left, ModelReference right)
-        => left.Equals(right);
-
-    public static bool operator!=(ModelReference left, ModelReference right)
-        => !left.Equals(right);
 }
 
 public sealed class MessageReference : ModelReference

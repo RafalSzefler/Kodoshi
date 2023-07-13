@@ -9,16 +9,16 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Kodoshi.CodeGenerator.CSharp;
+namespace Kodoshi.CodeGenerator.CSharp.Models;
 
 internal sealed class DefaultValuesFileGenerator
 {
-    private readonly InputContext _intputContext;
+    private readonly ProjectContext _intputContext;
     private readonly GenerationContext _context;
     private readonly Helpers _helpers;
 
     public DefaultValuesFileGenerator(
-        InputContext inputContext,
+        ProjectContext inputContext,
         GenerationContext context,
         Helpers helpers)
     {
@@ -129,6 +129,7 @@ namespace NAMESPACE
             _defaultValues[typeof(ulong)] = (ulong)0;
             _defaultValues[typeof(string)] = """";
             _defaultValues[typeof(System.Guid)] = System.Guid.Empty;
+            _defaultValues[typeof(Kodoshi.Core.VoidType)] = Kodoshi.Core.VoidType.Instance;
             _defaultValues[typeof(Kodoshi.Core.ReadOnlyArray<byte>)] = Kodoshi.Core.ReadOnlyArray.Empty<byte>();
             System.Reflection.MethodInfo? _method = null;
             foreach (var m in typeof(DefaultValuesCollection).GetMethods())

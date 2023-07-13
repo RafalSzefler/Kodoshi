@@ -2,16 +2,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Kodoshi.CodeGenerator.CSharp;
+namespace Kodoshi.CodeGenerator.CSharp.Models;
 
 internal sealed class ModelsGenerator
 {
-    private readonly InputContext _intputContext;
+    private readonly ProjectContext _intputContext;
     private readonly GenerationContext _context;
     private readonly Helpers _helpers;
 
     public ModelsGenerator(
-        InputContext inputContext,
+        ProjectContext inputContext,
         GenerationContext context,
         Helpers helpers)
     {

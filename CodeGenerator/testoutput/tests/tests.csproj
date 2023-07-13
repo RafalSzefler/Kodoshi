@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\KodoshiGenerated.Models\KodoshiGenerated.Models.csproj" />
+    <ProjectReference Include="..\TestProjectBase.Models\TestProjectBase.Models.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,9 +1,5 @@
 using Kodoshi.Core;
-using KodoshiGenerated.Core;
-using KodoshiGenerated.Models;
-using KodoshiGenerated.Models.Abcd;
-using KodoshiGenerated.Models.MyNmspc;
-using KodoshiGenerated.Models.NewNmspc;
+using TestProjectBase.Core;
 
 namespace tests;
 
@@ -79,14 +75,14 @@ public class DefaultValuesTests
     [Fact]
     public void TestFoo()
     {
-        var foo = new Foo(0, Guid.Empty);
+        var foo = new Foo(0, Guid.Empty, Kodoshi.Core.VoidType.Instance);
         Assert.Equal(foo, defaultValuesCollection.GetDefaultValue<Foo>());
     }
 
     [Fact]
     public void TestBaz()
     {
-        var baz = new Baz("", new Foo(0, Guid.Empty), "", "", ReadOnlyArray.Empty<Foo>());
+        var baz = new Baz("", new Foo(0, Guid.Empty, Kodoshi.Core.VoidType.Instance), "", "", ReadOnlyArray.Empty<Foo>());
         Assert.Equal(baz, defaultValuesCollection.GetDefaultValue<Baz>());
     }
 
@@ -136,7 +132,7 @@ public class DefaultValuesTests
     [Fact]
     public void TestSimpleTag()
     {
-        var instance = SimpleTag.CreateZeroValue(new Baz("", new Foo(0, Guid.Empty), "", "", ReadOnlyArray.Empty<Foo>()));
+        var instance = SimpleTag.CreateZeroValue(new Baz("", new Foo(0, Guid.Empty, Kodoshi.Core.VoidType.Instance), "", "", ReadOnlyArray.Empty<Foo>()));
         Assert.Equal(instance, defaultValuesCollection.GetDefaultValue<SimpleTag>());
     }
 }

@@ -9,10 +9,11 @@ public static class BuiltIns
     public static string Namespace { get; } = "_System";
     public static IReadOnlyDictionary<Identifier, ModelDefinition>
         AllModels { get; }
-
+    
+    public static IReadOnlyDictionary<Identifier, Identifier> Aliases { get; }
     public static MessageTemplateDefinition ArrayModel { get; }
-    public static MessageTemplateDefinition DictionaryModel { get; }
-    public static TagTemplateDefinition NullableModel { get; }
+    public static MessageTemplateDefinition MapModel { get; }
+    public static MessageDefinition VoidModel { get; }
     public static MessageDefinition BoolModel { get; }
     public static MessageDefinition Int8Model { get; }
     public static MessageDefinition Int16Model { get; }
@@ -39,23 +40,12 @@ public static class BuiltIns
         ArrayModel = array;
         result[array.FullName] = array;
 
-        var dictionary = new MessageTemplateDefinition(
-            new Identifier("dictionary", Namespace),
+        var map = new MessageTemplateDefinition(
+            new Identifier("map", Namespace),
             new [] { new TemplateArgumentReference(), new TemplateArgumentReference() },
             Array.Empty<MessageFieldDefinition>());
-        DictionaryModel = dictionary;
-        result[dictionary.FullName] = dictionary;
-
-        var nullableArgument = new TemplateArgumentReference();
-        var nullable = new TagTemplateDefinition(
-            new Identifier("nullable", Namespace),
-            new [] { nullableArgument },
-            new [] {
-                new TagFieldDefinition(null, "Empty", 0),
-                new TagFieldDefinition(nullableArgument, "Value", 1)
-            });
-        NullableModel = nullable;
-        result[nullable.FullName] = nullable;
+        MapModel = map;
+        result[map.FullName] = map;
 
         MessageDefinition NewModel(string name)
         {
@@ -65,6 +55,9 @@ public static class BuiltIns
             result[def.FullName] = def;
             return def;
         }
+
+        var @void = NewModel("void");
+        VoidModel = @void;
 
         var @bool = NewModel("bool");
         BoolModel = @bool;
@@ -107,5 +100,10 @@ public static class BuiltIns
 
         result.TrimExcess();
         AllModels = result;
+
+        var aliases = new Dictionary<Identifier, Identifier>();
+        aliases[new Identifier("byte", null)] = @uint8.FullName;
+        aliases.TrimExcess();
+        Aliases = aliases;
     }
 }

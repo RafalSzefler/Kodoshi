@@ -6,16 +6,16 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Kodoshi.CodeGenerator.CSharp;
+namespace Kodoshi.CodeGenerator.CSharp.Models;
 
 internal sealed class SerializationHelpersFile
 {
-    private readonly InputContext _intputContext;
+    private readonly ProjectContext _intputContext;
     private readonly GenerationContext _context;
     private readonly Helpers _helpers;
 
     public SerializationHelpersFile(
-        InputContext inputContext,
+        ProjectContext inputContext,
         GenerationContext context,
         Helpers helpers)
     {
