@@ -37,6 +37,7 @@ internal sealed class Helpers
             { BuiltIns.UInt64Model, SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.ULongKeyword)) },
             { BuiltIns.StringModel, SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword)) },
             { BuiltIns.UuidModel, SyntaxFactory.QualifiedName(SyntaxFactory.IdentifierName("System"), SyntaxFactory.IdentifierName("Guid")) },
+            { BuiltIns.VoidModel, SyntaxFactory.ParseTypeName("Kodoshi.Core.VoidType") },
         };
 
     private readonly ConcurrentDictionary<TemplateArgumentReference, int> _templateIds
@@ -115,7 +116,7 @@ internal sealed class Helpers
         {
             return new List<string> { "Kodoshi.Core", "ReadOnlyArray" };
         }
-        else if (@ref.Definition == BuiltIns.DictionaryModel)
+        else if (@ref.Definition == BuiltIns.MapModel)
         {
             return new List<string> { "Kodoshi.Core", "ReadOnlyMap" };
         }
@@ -278,7 +279,7 @@ internal sealed class Helpers
                         SyntaxFactory.SeparatedList<TypeSyntax>(
                             new[] { SyntaxFactory.OmittedTypeArgument() }))));
         }
-        else if (definition == BuiltIns.DictionaryModel)
+        else if (definition == BuiltIns.MapModel)
         {
             return SyntaxFactory.QualifiedName(
                 SyntaxFactory.IdentifierName("Kodoshi.Core"),

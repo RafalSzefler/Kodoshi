@@ -6,6 +6,6 @@ public interface IEngineBuilder
 {
     IEngineBuilder SetCodeGenerator(ICodeGenerator generator);
     IEngineBuilder SetInputFolder(IFolder inputFolder);
-    IEngineBuilder SetInputLoader(IInputLoader inputLoader);
+    IEngineBuilder SetInputLoader(IProjectLoader inputLoader);
     IEngine Build();
 }
