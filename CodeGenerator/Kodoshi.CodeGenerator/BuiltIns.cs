@@ -7,6 +7,7 @@ namespace Kodoshi.CodeGenerator;
 public static class BuiltIns
 {
     public static string Namespace { get; } = "_System";
+
     public static IReadOnlyDictionary<Identifier, ModelDefinition>
         AllModels { get; }
     
@@ -102,7 +103,7 @@ public static class BuiltIns
         AllModels = result;
 
         var aliases = new Dictionary<Identifier, Identifier>();
-        aliases[new Identifier("byte", null)] = @uint8.FullName;
+        aliases[new Identifier("byte", Namespace)] = @uint8.FullName;
         aliases.TrimExcess();
         Aliases = aliases;
     }

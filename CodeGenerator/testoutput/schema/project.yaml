@@ -1,6 +1,9 @@
 ProjectName: TestProject
 Version: 1.0.0
-OutputFolder: ..
+
+GlobalSettings:
+  OutputFolder: ..
+
 CompilerSettings:
   Kodoshi.CodeGenerator.CSharp:
     GlobalNamespace: TestProjectBase

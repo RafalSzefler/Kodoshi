@@ -35,7 +35,10 @@ internal sealed class ModelsGenerator
             serializerFileGenerator.Generate(ct),
             serializationHelpersFile.Generate(ct),
         };
-        await Task.WhenAll(tasks);
+        foreach (var task in tasks)
+        {
+            await task;
+        }
     }
 
     private async Task GenerateCSProj(CancellationToken ct)

@@ -15,19 +15,34 @@ namespace Kodoshi.CodeGenerator.InputLoader;
 
 internal sealed class ProjectLoaderImpl : IProjectLoader
 {
-    private readonly Dictionary<string, Dictionary<string, string>> _empty = new Dictionary<string, Dictionary<string, string>>();
+    private const string OutputFolderKey = "OutputFolder";
+    private const string CodeGeneratorKey = "CodeGenerator";
+
+    private readonly Dictionary<string, string> _empty = new Dictionary<string, string>();
+    private readonly Dictionary<string, Dictionary<string, string>> _emptyNested = new Dictionary<string, Dictionary<string, string>>();
     public async ValueTask<ProjectContext> Parse(IInputContext context, CancellationToken ct)
     {
         var tmpSettings = new Dictionary<string, string>(context.Settings);
         var projectFile = context.ProjectFile;
-        tmpSettings.Remove("CodeGenerator", out var codeGenerator);
+        tmpSettings.Remove(CodeGeneratorKey, out var codeGenerator);
         var content = await projectFile.Read(ct);
         var text = Encoding.UTF8.GetString(content.Span);
         var deserializer = new DeserializerBuilder().Build();
         var settings = deserializer.Deserialize<ProjectSettings>(text);
         ValidateSettings(settings);
+        var globalSettings = settings.GlobalSettings ?? _empty;
+        var compilerSettings = settings.CompilerSettings ?? _emptyNested;
+        var codeGeneratorSettings = compilerSettings[codeGenerator];
         var inputFolder = projectFile.ParentFolder;
-        var outputFolderPath = settings.OutputFolder ?? "out";
+
+        if (!codeGeneratorSettings.TryGetValue(OutputFolderKey, out var outputFolderPath))
+        {
+            if (!globalSettings.TryGetValue(OutputFolderKey, out outputFolderPath))
+            {
+                outputFolderPath = "out";
+            }
+        }
+
         IFolder outputFolder;
         if (!(await inputFolder.Exists(outputFolderPath, ct)))
         {
@@ -41,7 +56,7 @@ internal sealed class ProjectLoaderImpl : IProjectLoader
         var additionalSettings = new Dictionary<string, string>();
         additionalSettings[nameof(settings.ProjectName)] = settings.ProjectName!;
         additionalSettings[nameof(settings.Version)] = settings.Version!;
-        UpdateAdditionalSettings(codeGenerator, settings.CompilerSettings ?? _empty, additionalSettings);
+        UpdateAdditionalSettings(codeGenerator, compilerSettings, additionalSettings);
         foreach (var kvp in tmpSettings)
         {
             additionalSettings[kvp.Key] = kvp.Value;

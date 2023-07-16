@@ -319,6 +319,17 @@ internal sealed class Helpers
                         res))));
     }
 
+    public TypeSyntax TransformServiceDefinitionToInterfaceSyntax(ServiceDefinition definition)
+    {
+        var fullName = definition.FullName;
+        NameSyntax nmspc = SyntaxFactory.IdentifierName(_context.ServerNamespace);
+        if (!string.IsNullOrEmpty(fullName.Namespace))
+        {
+            nmspc = SyntaxFactory.QualifiedName(nmspc, SyntaxFactory.IdentifierName(fullName.Namespace));
+        }
+        return SyntaxFactory.QualifiedName(nmspc, SyntaxFactory.IdentifierName("I" + fullName.Name));
+    }
+
     public TypeSyntax TransformModelDefinitionToSyntax(ModelDefinition definition)
     {
         switch (definition.Kind)

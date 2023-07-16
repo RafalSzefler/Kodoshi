@@ -6,7 +6,7 @@ namespace Kodoshi.CodeGenerator.Entities;
 public abstract class ModelReference
 {
     public ModelReferenceKind Kind { get; }
-    private int ReferenceId { get; }
+    public int ReferenceId { get; }
     private static int _globalCounter = 0;
 
     protected ModelReference(ModelReferenceKind kind)
