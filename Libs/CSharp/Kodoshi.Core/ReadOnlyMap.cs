@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Kodoshi.Core
@@ -14,10 +12,11 @@ namespace Kodoshi.Core
         where TKey : IEquatable<TKey>
         where TValue : IEquatable<TValue>
     {
-        internal static readonly ReadOnlyMap<TKey, TValue> Empty = new ReadOnlyMap<TKey, TValue>(FrozenDictionary<TKey, TValue>.Empty);
+        internal static readonly ReadOnlyMap<TKey, TValue> Empty
+            = new ReadOnlyMap<TKey, TValue>(new Dictionary<TKey, TValue>());
 
-        private readonly FrozenDictionary<TKey, TValue> _instance;
-        internal ReadOnlyMap(FrozenDictionary<TKey, TValue> instance)
+        private readonly Dictionary<TKey, TValue> _instance;
+        internal ReadOnlyMap(Dictionary<TKey, TValue> instance)
         {
             this._instance = instance;
         }
@@ -79,7 +78,7 @@ namespace Kodoshi.Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public FrozenDictionary<TKey, TValue> AsDict() => _instance;
+        public IReadOnlyDictionary<TKey, TValue> AsDict() => _instance;
     }
 
     public static class ReadOnlyMap
@@ -94,16 +93,16 @@ namespace Kodoshi.Core
         public static ReadOnlyMap<TKey, TValue> Copy<TKey, TValue>(Dictionary<TKey, TValue> dict)
                 where TKey : IEquatable<TKey>
                 where TValue : IEquatable<TValue>
-            => Move(dict.ToFrozenDictionary());
+            => Move(new Dictionary<TKey, TValue>(dict));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlyMap<TKey, TValue> Copy<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> values)
                 where TKey : IEquatable<TKey>
                 where TValue : IEquatable<TValue>
-            => Move(values.ToFrozenDictionary());
+            => Move(new Dictionary<TKey, TValue>(values));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlyMap<TKey, TValue> Move<TKey, TValue>(FrozenDictionary<TKey, TValue>? dict)
+        public static ReadOnlyMap<TKey, TValue> Move<TKey, TValue>(Dictionary<TKey, TValue>? dict)
                 where TKey : IEquatable<TKey>
                 where TValue : IEquatable<TValue>
             => (dict == null) ? (Empty<TKey, TValue>()) : (new ReadOnlyMap<TKey, TValue>(dict));

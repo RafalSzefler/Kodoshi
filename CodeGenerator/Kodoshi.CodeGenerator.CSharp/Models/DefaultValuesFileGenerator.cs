@@ -54,18 +54,18 @@ internal sealed class DefaultValuesFileGenerator
         var code = @"
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Frozen;
+using System.Collections.Generic;
 
 namespace NAMESPACE
 {
     internal sealed class DefaultValuesCollection : Kodoshi.Core.IDefaultValuesCollection
     {
         private readonly ConcurrentDictionary<Type, object> _valuesHolder;
-        private readonly FrozenDictionary<Type, Func<Type[], Kodoshi.Core.IDefaultValuesCollection, object>> _valuesBuilders;
+        private readonly Dictionary<Type, Func<Type[], Kodoshi.Core.IDefaultValuesCollection, object>> _valuesBuilders;
 
         public DefaultValuesCollection(
             ConcurrentDictionary<Type, object> _valuesHolder,
-            FrozenDictionary<Type, Func<Type[], Kodoshi.Core.IDefaultValuesCollection, object>> _valuesBuilders)
+            Dictionary<Type, Func<Type[], Kodoshi.Core.IDefaultValuesCollection, object>> _valuesBuilders)
         {
             this._valuesHolder = _valuesHolder;
             this._valuesBuilders = _valuesBuilders;
@@ -151,9 +151,10 @@ namespace NAMESPACE
 
             { }
 
+            _builders.TrimExcess();
             return new DefaultValuesCollection(
                 _defaultValues,
-                System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(_builders));
+                _builders);
         }
     }
 }

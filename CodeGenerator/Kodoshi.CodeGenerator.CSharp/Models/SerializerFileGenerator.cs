@@ -191,18 +191,18 @@ internal sealed class SerializerFileGenerator
 using System;
 using Kodoshi.Core;
 using System.Collections.Concurrent;
-using System.Collections.Frozen;
+using System.Collections.Generic;
 
 namespace NAMESPACE
 {
     internal sealed class SerializerCollection : ISerializerCollection
     {
         private readonly ConcurrentDictionary<Type, object> _serializers;
-        private readonly FrozenDictionary<Type, Func<Type[], SerializerCollection, object>> _serializerBuilders;
+        private readonly Dictionary<Type, Func<Type[], SerializerCollection, object>> _serializerBuilders;
 
         public SerializerCollection(
             ConcurrentDictionary<Type, object> serializers,
-            FrozenDictionary<Type, Func<Type[], SerializerCollection, object>> serializerBuilders)
+            Dictionary<Type, Func<Type[], SerializerCollection, object>> serializerBuilders)
         {
             _serializers = serializers;
             _serializerBuilders = serializerBuilders;
@@ -293,7 +293,8 @@ namespace KodoshiGenerated.Core
 
             {}
 
-            return new SerializerCollection(_serializers, System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(_builders));
+            _builders.TrimExcess();
+            return new SerializerCollection(_serializers, _builders);
         }
     }
 }

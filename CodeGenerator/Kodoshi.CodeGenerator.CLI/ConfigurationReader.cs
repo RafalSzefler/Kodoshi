@@ -41,7 +41,7 @@ internal static class ConfigurationReader
                 }
                 else
                 {
-                    projectFilePath = o.ProjectPath;
+                    projectFilePath = Path.GetFullPath(o.ProjectPath);
                     var dir = Path.GetDirectoryName(projectFilePath);
                     if (!string.IsNullOrEmpty(dir))
                     {
@@ -122,9 +122,8 @@ internal static class ConfigurationReader
 
     private static string? GetCurrentAssemblyDirectory()
     {
-        var location = typeof(ConfigurationReader).Assembly.Location;
-        var uri = new UriBuilder(location);
-        var path = Uri.UnescapeDataString(uri.Path);
+        var asm = typeof(ConfigurationReader).Assembly;
+        var path =  Path.GetFullPath(asm.Location);
         return Path.GetDirectoryName(path);
     }
 }

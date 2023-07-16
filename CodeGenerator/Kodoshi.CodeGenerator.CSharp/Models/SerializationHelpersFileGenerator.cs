@@ -37,7 +37,6 @@ internal sealed class SerializationHelpersFile
     {
         var code = @"
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading;
@@ -53,7 +52,7 @@ namespace NAMESPACE
         private const byte _32bitTag = 2;
         private const byte _64bitTag = 3;
         private const byte _128bitTag = 4;
-        private static readonly FrozenDictionary<Type, byte> _tags;
+        private static readonly Dictionary<Type, byte> _tags;
 
         public static readonly StreamPipeWriterOptions WriterOptions = new StreamPipeWriterOptions(leaveOpen: true);
 
@@ -74,7 +73,8 @@ namespace NAMESPACE
                 { typeof(double), _64bitTag },
                 { typeof(Guid), _128bitTag },
             };
-            _tags = tags.ToFrozenDictionary();
+            tags.TrimExcess();
+            _tags = tags;
         }
 
         public static byte GetTagValue<T>()
