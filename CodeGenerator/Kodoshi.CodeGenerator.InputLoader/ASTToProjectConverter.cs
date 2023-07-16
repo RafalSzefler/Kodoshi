@@ -695,6 +695,16 @@ internal sealed class ASTToProjectConverter
                 duplicates.Add(id);
             }
         }
+
+        duplicates.Clear();
+        foreach (var service in project.Services)
+        {
+            if (duplicates.Contains(service.Id))
+            {
+                throw new ParsingException($"Found multiple services with same id {service.Id}.");
+            }
+            duplicates.Add(service.Id);
+        }
     }
 
     private IReadOnlyList<ServiceDefinition> BuildServices()
