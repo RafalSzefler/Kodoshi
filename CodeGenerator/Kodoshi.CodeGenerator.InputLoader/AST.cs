@@ -12,6 +12,10 @@ namespace Kodoshi.CodeGenerator.InputLoader.AST
         TAG = 5,
         TAG_FIELD = 6,
         NAME = 7,
+        SERVICE = 8,
+        KEY_VALUE_PAIR = 9,
+        NUMBER = 10,
+        NUMBER_ARRAY = 11,
     }
 
     internal abstract class ASTNode
@@ -31,6 +35,26 @@ namespace Kodoshi.CodeGenerator.InputLoader.AST
         public ASTName(string value) : base(ASTKind.NAME)
         {
             Value = value;
+        }
+    }
+
+    internal sealed class ASTNumber : ASTNode
+    {
+        public int Value { get; }
+        public ASTNumber(int value) : base(ASTKind.NUMBER)
+        {
+            Value = value;
+        }   
+    }
+
+    internal sealed class ASTNumberArray : ASTNode
+    {
+        public IReadOnlyList<int> Values { get; }
+
+        public ASTNumberArray(IReadOnlyList<int> values)
+            : base(ASTKind.NUMBER_ARRAY)
+        {
+            Values = values;
         }
     }
 
@@ -142,6 +166,39 @@ namespace Kodoshi.CodeGenerator.InputLoader.AST
             Name = name;
             GenericArguments = genericArguments;
             Fields = fields;
+        }
+    }
+
+    internal sealed class ASTKeyValuePair : ASTNode
+    {
+        public string Key { get; }
+        public AST.ASTNode Value { get; }
+
+        public ASTKeyValuePair(string key, ASTNode value)
+            : base(ASTKind.KEY_VALUE_PAIR)
+        {
+            Key = key;
+            Value = value;
+        }
+    }
+
+    internal sealed class ASTServiceDefinition : ASTStatement
+    {
+        public string Name { get; }
+        public ASTReference Input { get; }
+        public ASTReference Output { get; }
+        public int Id { get; }
+        public ASTServiceDefinition(
+                string name,
+                ASTReference input,
+                ASTReference output,
+                int id)
+            : base(ASTKind.SERVICE)
+        {
+            Name = name;
+            Input = input;
+            Output = output;
+            Id = id;
         }
     }
 }

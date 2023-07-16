@@ -55,13 +55,13 @@ namespace Kodoshi.CodeGenerator.InputLoader
         [Lexeme(",")]
         SYMBOL_COMMA = 209,
 
-        [Lexeme("@")]
-        SYMBOL_AT = 210,
-
         [Lexeme("[0-9]+")]
         NUMBER = 300,
 
+        [Lexeme("@[a-zA-Z][a-zA-Z0-9_]*")]
+        KEY = 301,
+
         [Lexeme("[a-zA-Z][a-zA-Z0-9_]*")]
-        IDENTIFIER = 301,
+        IDENTIFIER = 302,
     }
 }

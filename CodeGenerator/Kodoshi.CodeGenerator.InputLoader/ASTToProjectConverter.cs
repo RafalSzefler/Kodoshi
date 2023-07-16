@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Kodoshi.CodeGenerator.Entities;
 using Kodoshi.CodeGenerator.FileSystem;
 using Kodoshi.CodeGenerator.InputLoader.AST;
@@ -22,8 +24,10 @@ internal sealed class ASTToProjectConverter
         = new HashSet<ASTNode>();
     private readonly HashSet<ASTNode> _permamentMarkings
         = new HashSet<ASTNode>();
-    private readonly List<ASTStatement> _topologicalySorted
+    private readonly List<ASTStatement> _topologicalySortedModels
         = new List<ASTStatement>();
+    private readonly List<ASTServiceDefinition> _services
+        = new List<ASTServiceDefinition>();
     private string _currentNamespace = "";
     private IFile _currentFile;
     private ASTBlock _currentBlock;
@@ -54,13 +58,165 @@ internal sealed class ASTToProjectConverter
         FillIdentifiers();
         SortTopologically();
         var models = BuildModels();
-        var project = new Project(
+        var services = BuildServices();
+        var hash = CalculateHash(
             _settings.ProjectName!,
             _settings.Version!,
             models,
-            Array.Empty<ServiceDefinition>());
+            services);
+        var project = new Project(
+            _settings.ProjectName!,
+            _settings.Version!,
+            hash,
+            models,
+            services);
         ValidateProject(project);
         return project;
+    }
+
+    private static string CalculateHash(string projectName, string projectVersion, IReadOnlyList<ModelDefinition> models, IReadOnlyList<ServiceDefinition> services)
+    {
+        using (var hash = SHA256.Create())
+        {
+            void updateInt(int value)
+            {
+                byte[] bytes = BitConverter.GetBytes(value);
+                if (!BitConverter.IsLittleEndian)
+                    Array.Reverse(bytes);
+                hash!.TransformBlock(bytes, 0, bytes.Length, null, 0);
+            }
+
+            void updateString(string value)
+            {
+                updateInt(value.Length);
+                var arr = Encoding.UTF8.GetBytes(value);
+                hash!.TransformBlock(arr, 0, arr.Length, null, 0);
+            }
+
+            void updateIdentifier(Identifier id)
+            {
+                updateString(Stringifier.ToString(id));
+            }
+
+            void updateReference(ModelReference @ref)
+            {
+                updateString(Stringifier.ToString(@ref));
+            }
+
+            updateString(projectName);
+            updateString(projectVersion);
+
+            {
+                var length = models.Count;
+                updateInt(length);
+
+                for (var i = 0; i < length; i++)
+                {
+                    var model = models[i];
+                    updateString("^M^");
+                    updateIdentifier(model.FullName);
+                    switch (model.Kind)
+                    {
+                        case ModelKind.Message:
+                        {
+                            updateString("M-");
+                            var msg = (MessageDefinition)model;
+                            updateInt(msg.Fields.Count);
+                            foreach (var field in msg.Fields)
+                            {
+                                updateInt(field.Id);
+                                updateInt(field.Name.Length);
+                                updateString(field.Name);
+                                updateReference(field.Type);
+                            }
+                            updateString("-M");
+                            break;
+                        }
+                        case ModelKind.MessageTemplate:
+                        {
+                            updateString("MT-");
+                            var msg = (MessageTemplateDefinition)model;
+                            updateInt(msg.TemplateArguments.Count);
+                            updateInt(msg.Fields.Count);
+                            foreach (var field in msg.Fields)
+                            {
+                                updateInt(field.Id);
+                                updateInt(field.Name.Length);
+                                updateString(field.Name);
+                                updateReference(field.Type);
+                            }
+                            updateString("-MT");
+                            break;
+                        }
+                        case ModelKind.Tag:
+                        {
+                            updateString("T-");
+                            var msg = (TagDefinition)model;
+                            updateInt(msg.Fields.Count);
+                            foreach (var field in msg.Fields)
+                            {
+                                updateInt(field.Value);
+                                updateInt(field.Name.Length);
+                                updateString(field.Name);
+                                if (field.AdditionalDataType is null)
+                                {
+                                    updateString("$");
+                                }
+                                else
+                                {
+                                    updateReference(field.AdditionalDataType);
+                                }
+                            }
+                            updateString("-T");
+                            break;
+                        }
+                        case ModelKind.TagTemplate:
+                        {
+                            updateString("TT-");
+                            var msg = (TagTemplateDefinition)model;
+                            updateInt(msg.TemplateArguments.Count);
+                            updateInt(msg.Fields.Count);
+                            foreach (var field in msg.Fields)
+                            {
+                                updateInt(field.Value);
+                                updateInt(field.Name.Length);
+                                updateString(field.Name);
+                                if (field.AdditionalDataType is null)
+                                {
+                                    updateString("$");
+                                }
+                                else
+                                {
+                                    updateReference(field.AdditionalDataType);
+                                }
+                            }
+                            updateString("-TT");
+                            break;
+                        }
+                        default: throw new NotImplementedException();
+                    }
+                }
+            }
+
+            {
+                var length = services.Count;
+                updateInt(services.Count);
+
+                for (var i = 0; i < length; i++)
+                {
+                    var service = services[i];
+                    updateString("^S^");
+                    updateIdentifier(service.FullName);
+                    updateInt(service.Id);
+                    updateReference(service.Input);
+                    updateReference(service.Output);
+                }
+            }
+
+            var magicByte = new byte[] { 37, 123, 88, 214 };
+            hash.TransformFinalBlock(magicByte, 0, magicByte.Length);
+            return System.Convert.ToBase64String(hash.Hash);
+        }
     }
 
     private void FillIdentifiers()
@@ -88,6 +244,13 @@ internal sealed class ASTToProjectConverter
                 case ASTKind.TAG:
                 {
                     var real = (ASTTagDefinition)stmt;
+                    var id = new Identifier(real.Name, _currentNamespace);
+                    _toIdentifiersMap.Add(stmt, id);
+                    break;
+                }
+                case ASTKind.SERVICE:
+                {
+                    var real = (ASTServiceDefinition)stmt;
                     var id = new Identifier(real.Name, _currentNamespace);
                     _toIdentifiersMap.Add(stmt, id);
                     break;
@@ -134,6 +297,14 @@ internal sealed class ASTToProjectConverter
 
         switch (node.Kind)
         {
+            case ASTKind.SERVICE:
+            {
+                var service = (ASTServiceDefinition)node;
+                _services.Add(service);
+                TraverseTopologically(service.Input);
+                TraverseTopologically(service.Output);
+                break;
+            }
             case ASTKind.NAMESPACE:
             {
                 var nmspc = (ASTNamespaceStatement)node;
@@ -174,7 +345,7 @@ internal sealed class ASTToProjectConverter
                     TraverseTopologically(field);
                 _temporaryMarkings.Remove(msg);
                 _permamentMarkings.Add(msg);
-                _topologicalySorted.Add(msg);
+                _topologicalySortedModels.Add(msg);
                 _currentGenericsMap = oldGenerics;
                 break;
             }
@@ -202,7 +373,7 @@ internal sealed class ASTToProjectConverter
                     TraverseTopologically(field);
                 _temporaryMarkings.Remove(tag);
                 _permamentMarkings.Add(tag);
-                _topologicalySorted.Add(tag);
+                _topologicalySortedModels.Add(tag);
                 _currentGenericsMap = oldGenerics;
                 break;
             }
@@ -234,7 +405,7 @@ internal sealed class ASTToProjectConverter
 
                 if (string.IsNullOrEmpty(realNmspc))
                 {
-                    var id = new Identifier(@ref.Identifier, "_System");
+                    var id = new Identifier(@ref.Identifier, BuiltIns.Namespace);
                     if (
                             BuiltIns.Aliases.ContainsKey(id)
                             || BuiltIns.AllModels.ContainsKey(id))
@@ -283,8 +454,8 @@ internal sealed class ASTToProjectConverter
 
     private IReadOnlyList<ModelDefinition> BuildModels()
     {
-        var models = new List<ModelDefinition>(_topologicalySorted.Count);
-        foreach (var stmt in _topologicalySorted)
+        var models = new List<ModelDefinition>(_topologicalySortedModels.Count);
+        foreach (var stmt in _topologicalySortedModels)
         {
             switch (stmt.Kind)
             {
@@ -524,5 +695,23 @@ internal sealed class ASTToProjectConverter
                 duplicates.Add(id);
             }
         }
+    }
+
+    private IReadOnlyList<ServiceDefinition> BuildServices()
+    {
+        var count = _services.Count;
+        if (count == 0) return Array.Empty<ServiceDefinition>();
+        var result = new ServiceDefinition[count];
+        for (var i = 0; i < count; i++)
+        {
+            var astService = _services[i];
+            var id = _toIdentifiersMap.GetByKey(astService);
+            result[i] = new ServiceDefinition(
+                id,
+                Map(astService.Input),
+                Map(astService.Output),
+                astService.Id);
+        }
+        return result;
     }
 }

@@ -9,6 +9,12 @@ public abstract class BaseException : Exception
     { }
 }
 
+public sealed class ConfigurationException : BaseException
+{
+    public ConfigurationException(string message) : base(message)
+    { }
+}
+
 public sealed class MiscException : BaseException
 {
     public MiscException(string message) : base(message)

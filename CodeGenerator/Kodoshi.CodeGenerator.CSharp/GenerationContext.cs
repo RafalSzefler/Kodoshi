@@ -14,11 +14,12 @@ internal sealed class GenerationContext
     public string ClientNamespace { get; }
     public string ServerNamespace { get; }
     public string CoreNamespace { get; }
+    public bool CreateClient { get; }
+    public bool CreateServer  { get; }
     public AsyncLazy<IFolder> ModelsFolder { get; }
     public AsyncLazy<IFolder> ClientFolder { get; }
     public AsyncLazy<IFolder> ServerFolder { get; }
     public TagDefinition? RequestsTag { get; }
-    public TagDefinition? ResponseTag { get; }
     public IReadOnlyList<ModelDefinition> ServicesTags { get; }
 
     public GenerationContext(
@@ -29,11 +30,12 @@ internal sealed class GenerationContext
         string clientNamespace,
         string serverNamespace,
         string coreNamespace,
+        bool createClient,
+        bool createServer,
         AsyncLazy<IFolder> modelsFolder,
         AsyncLazy<IFolder> clientFolder,
         AsyncLazy<IFolder> serverFolder,
-        TagDefinition? requestTag,
-        TagDefinition? responseTag)
+        TagDefinition? requestTag)
     {
         Name = name;
         Version = version;
@@ -42,21 +44,19 @@ internal sealed class GenerationContext
         ClientNamespace = clientNamespace;
         ServerNamespace = serverNamespace;
         CoreNamespace = coreNamespace;
+        CreateClient = createClient;
+        CreateServer = createServer;
         ModelsFolder = modelsFolder;
         ClientFolder = clientFolder;
         ServerFolder = serverFolder;
         RequestsTag = requestTag;
-        ResponseTag = responseTag;
-        if (requestTag is null && responseTag is null)
+        if (requestTag is null)
         {
             ServicesTags = Array.Empty<ModelDefinition>();
         }
         else
         {
-            var services = new List<ModelDefinition>();
-            if (requestTag is not null) services.Add(requestTag);
-            if (responseTag is not null) services.Add(responseTag);
-            ServicesTags = services;
+            ServicesTags = new ModelDefinition[] { requestTag };
         }
     }
 }
