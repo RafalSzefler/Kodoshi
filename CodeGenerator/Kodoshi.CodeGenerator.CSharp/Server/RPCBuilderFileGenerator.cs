@@ -76,7 +76,7 @@ namespace NAMESPACE
             if (_handlerTypes.Count > 0)
             {{
                 var types = string.Join("", "", System.Linq.Enumerable.Select(_handlerTypes, x => x.FullName));
-                throw new System.ArgumentException($""Following interces require implementation: {{types}}"");
+                throw new System.ArgumentException($""Following interfaces require implementation: {{types}}"");
             }}
             this._scannedTypes = _foundTypes;
         }}

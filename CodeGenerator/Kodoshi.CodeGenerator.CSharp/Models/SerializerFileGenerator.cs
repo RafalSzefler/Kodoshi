@@ -312,7 +312,8 @@ namespace KodoshiGenerated.Core
 
     private IEnumerable<StatementSyntax> BuildSerializerStatements()
     {
-        foreach (var model in _intputContext.Project.Models)
+        var models = Helpers.Chain(_intputContext.Project.Models, _context.ServicesTags);
+        foreach (var model in models)
         {
             TypeSyntax modelTypeName;
             IReadOnlyList<TemplateArgumentReference>? templateArguments = null;
