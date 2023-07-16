@@ -56,7 +56,7 @@ internal static class ConfigurationReader
                 var currentAssemblyDir = GetCurrentAssemblyDirectory();
                 if (!string.IsNullOrEmpty(currentAssemblyDir))
                 {
-                    resolutionPaths.Add(currentAssemblyDir);
+                    resolutionPaths.Add(Path.Join(currentAssemblyDir, "CodeGenerators", codeGeneratorName));
                 }
 
                 if (resolutionPaths.Count == 0)
@@ -71,40 +71,57 @@ internal static class ConfigurationReader
         return config;
     }
 
-    private static Func<IStartup> CreateStartupBuilder(IReadOnlyList<string> paths, string name)
+    private static Func<IStartup> CreateStartupBuilder(IReadOnlyList<string> resolutionDirectories, string name)
     {
         if (!name.EndsWith(".dll"))
         {
             name = name + ".dll";
         }
 
-        foreach (var path in paths)
+        var currentWorkingDirectory = Directory.GetCurrentDirectory();
+
+        foreach (var directory in resolutionDirectories)
         {
-            var assemblyName = Path.Join(path, name);
-            if (!Path.Exists(assemblyName))
+            if (!Directory.Exists(directory))
             {
                 continue;
             }
-            var asm = Assembly.LoadFile(assemblyName);
+
+            Assembly asm;
+            Directory.SetCurrentDirectory(directory);
+            try
+            {
+                if (!Path.Exists(name))
+                {
+                    continue;
+                }
+
+                asm = Assembly.LoadFrom(Path.Join(directory, name));
+            }
+            finally
+            {
+                Directory.SetCurrentDirectory(currentWorkingDirectory);
+            }
+
             var startupTypes = asm.GetTypes()
                 .Where(t => t.GetInterfaces().Contains(typeof(IStartup)))
                 .ToList();
             
             if (startupTypes.Count == 0)
             {
-                throw new InvalidDataException($"Assembly [{assemblyName}] does not implement {nameof(IStartup)} interface.");
+                throw new InvalidDataException($"Assembly [{name}] does not implement {nameof(IStartup)} interface.");
             }
 
             if (startupTypes.Count > 1)
             {
-                throw new InvalidDataException($"Assembly [{assemblyName}] implements multiple {nameof(IStartup)} interfaces. Expected one.");
+                throw new InvalidDataException($"Assembly [{name}] implements multiple {nameof(IStartup)} interfaces. Expected one.");
             }
             var type = startupTypes[0];
 
             var ctr = type.GetConstructor(Array.Empty<Type>());
             if (ctr == null)
             {
-                throw new InvalidDataException($"Assembly [{assemblyName}] implements {nameof(IStartup)} interface. However it doesn't have default constructor, which is expected.");
+                throw new InvalidDataException($"Assembly [{name}] implements {nameof(IStartup)} interface. However it doesn't have default constructor, which is expected.");
             }
 
             return () => {

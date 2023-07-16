@@ -12,11 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Kodoshi.CodeGenerator\Kodoshi.CodeGenerator.csproj" />
+    <ProjectReference Include="..\..\CommandLineInterface\Kodoshi.CodeGenerator\Kodoshi.CodeGenerator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.6.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.*" />
   </ItemGroup>
 
 </Project>
