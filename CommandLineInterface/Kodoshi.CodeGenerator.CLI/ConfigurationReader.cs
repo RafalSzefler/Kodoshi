@@ -139,8 +139,7 @@ internal static class ConfigurationReader
 
     private static string? GetCurrentAssemblyDirectory()
     {
-        var asm = typeof(ConfigurationReader).Assembly;
-        var path =  Path.GetFullPath(asm.Location);
-        return Path.GetDirectoryName(path);
+        var baseDirectory = System.AppContext.BaseDirectory;
+        return Path.GetDirectoryName(baseDirectory);
     }
 }
