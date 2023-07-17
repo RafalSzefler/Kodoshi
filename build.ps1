@@ -26,9 +26,9 @@ function Get-Rid
 function Build
 {
     [string] $realScriptDir = [IO.Path]::GetFullPath($scriptDir)
-    [string] $binPath = "$realScriptDir/bin"
-    [string] $genPath = "$realScriptDir/bin/CodeGenerators"
     [string] $rid = "$(Get-Rid)".Trim()
+    [string] $binPath = "$realScriptDir/bin/$rid"
+    [string] $genPath = "$realScriptDir/bin/$rid/CodeGenerators"
 
     New-Item -ItemType Directory -Path $binPath -Force
     New-Item -ItemType Directory -Path $genPath -Force
