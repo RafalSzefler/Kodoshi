@@ -30,6 +30,7 @@ function Build
     [string] $binPath = "$realScriptDir/bin/$rid"
     [string] $genPath = "$realScriptDir/bin/$rid/CodeGenerators"
 
+    Remove-Item -Recurse -Force $binPath
     New-Item -ItemType Directory -Path $binPath -Force
     New-Item -ItemType Directory -Path $genPath -Force
 
