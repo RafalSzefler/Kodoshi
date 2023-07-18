@@ -56,6 +56,7 @@ internal sealed class ClientGenerator
             .Append("    <Nullable>enable</Nullable>\n")
             .Append("    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>\n")
             .Append("    <InvariantGlobalization>true</InvariantGlobalization>\n")
+            .Append("    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>\n")
             .Append("  </PropertyGroup>\n\n")
             .Append("  <ItemGroup>\n")
             .Append($"    <ProjectReference Include=\"..\\{_context.ModelsNamespace}\\{_context.ModelsNamespace}.csproj\" />\n")

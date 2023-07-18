@@ -55,6 +55,7 @@ internal sealed class ModelsGenerator
             .Append("    <Nullable>enable</Nullable>\n")
             .Append("    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>\n")
             .Append("    <InvariantGlobalization>true</InvariantGlobalization>\n")
+            .Append("    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>\n")
             .Append("  </PropertyGroup>\n\n")
             .Append("  <ItemGroup>\n")
             .Append("    <PackageReference Include=\"System.IO.Pipelines\" Version=\"6.*\" />\n")
