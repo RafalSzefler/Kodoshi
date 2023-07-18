@@ -58,7 +58,6 @@ internal sealed class ModelsGenerator
             .Append("  </PropertyGroup>\n\n")
             .Append("  <ItemGroup>\n")
             .Append("    <PackageReference Include=\"System.IO.Pipelines\" Version=\"6.*\" />\n")
-            .Append("    <PackageReference Include=\"System.Collections.Immutable\" Version=\"7.*\" />\n")
             .Append("    <PackageReference Include=\"Kodoshi.Core\" Version=\"1.0.0\" />\n")
             .Append("  </ItemGroup>\n\n")
             .Append("</Project>\n")
