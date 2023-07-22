@@ -89,7 +89,7 @@ namespace NAMESPACE
             Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<Kodoshi.Core.ISerializerCollection>(_serviceCollection, _serializersCollection);
             if (_scannedTypes is not null)
                 foreach (var (@interface, type) in _scannedTypes)
-                    Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddTransient(_serviceCollection, @interface, type);
+                    Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions.TryAddTransient(_serviceCollection, @interface, type);
         }}
 
         public void ApplyToWebApplication(Microsoft.AspNetCore.Builder.WebApplication _app)
