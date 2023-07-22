@@ -95,7 +95,7 @@ namespace NAMESPACE
             }}
         }}
 
-        private static async System.Threading.Tasks.Task InternalHandle(Microsoft.AspNetCore.Http.HttpContext _context, Kodoshi.Core.ISerializerCollection _serializersCollection, TestProjectBase.Models._Services.Request _req)
+        private static async System.Threading.Tasks.Task InternalHandle(Microsoft.AspNetCore.Http.HttpContext _context, Kodoshi.Core.ISerializerCollection _serializersCollection, {_context.ModelsNamespace}._Services.Request _req)
         {{ }}
     }}
 }}";
