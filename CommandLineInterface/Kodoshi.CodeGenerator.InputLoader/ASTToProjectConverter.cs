@@ -423,14 +423,22 @@ internal sealed class ASTToProjectConverter
 
                 var _stack = new Stack<string>(4);
                 var _currentNmspc = "";
-                var currentNamespaceSplit =  _currentNamespace.Split('.');
-                foreach (var nmspcPiece in currentNamespaceSplit)
+                _stack.Push(_currentNmspc);
+                var _currentNamespaceSplit = _currentNamespace.Split('.');
+                var _currentNamespaceSplitLength = _currentNamespaceSplit.Length;
+                if (_currentNamespaceSplitLength > 0)
                 {
-                    if (string.IsNullOrWhiteSpace(nmspcPiece)) continue;
-                    _stack.Push(nmspcPiece);
-                    _currentNmspc += nmspcPiece;
+                    _currentNmspc = _currentNamespaceSplit[0];
+                    _stack.Push(_currentNmspc);
+                    for (var i = 1; i < _currentNamespaceSplitLength; i++)
+                    {
+                        var nmspcPiece = _currentNamespaceSplit[i];
+                        _currentNmspc += '.' + nmspcPiece;
+                        _stack.Push(_currentNmspc);
+                    }
                 }
 
+                var foundMatch = false;
                 while (_stack.Count > 0)
                 {
                     var stackNmspc = _stack.Pop();
@@ -443,9 +451,19 @@ internal sealed class ASTToProjectConverter
                     {
                         _refsByIdentifiers.Add(@ref, currentId);
                         TraverseTopologically(subNode);
-                        return;
+                        if (!foundMatch)
+                        {
+                            foundMatch = true;
+                        }
+                        else
+                        {
+                            throw new ParsingException($"Multiple choices for identifier {@ref.Identifier}. Use full path instead.");
+                        }
                     }
                 }
+
+                if (foundMatch) return;
+
                 throw new ParsingException($"Invalid reference {@ref.Identifier}");
             }
             default: break;

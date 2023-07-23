@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using sly.lexer;
 using sly.parser.generator;
 using sly.parser.parser;
@@ -20,7 +21,16 @@ namespace Kodoshi.CodeGenerator.InputLoader
 
         [Production("id : name (SYMBOL_DOT[d] name)*")]
         public AST.ASTNode IdentifierWithDot(AST.ASTName identifier, List<Group<ExpressionToken, AST.ASTNode>> names)
-            => new AST.ASTName(identifier.Value + string.Join(".", names.Select(x => ((AST.ASTName)x.Value(0)).Value)));
+        {
+            var builder = new StringBuilder();
+            builder.Append(identifier.Value);
+            foreach (var name in names)
+            {
+                builder.Append('.').Append(((AST.ASTName)name.Value(0)).Value);
+            }
+            var fullName = builder.ToString();
+            return new AST.ASTName(fullName);
+        }
 
         [Production("namespace : KEYWORD_NAMESPACE[d] id SYMBOL_SEMICOLON[d]")]
         public AST.ASTNode Namespace(AST.ASTNode identifier)
