@@ -1,3 +1,6 @@
+[string] $scriptDir = $PSScriptRoot
+[string] $realScriptDir = [IO.Path]::GetFullPath($scriptDir)
+
 function Get-Rid
 {
     [string] $rid;
@@ -20,7 +23,9 @@ function Get-Rid
     return "$rid-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower())"
 }
 
-$rid = "$(Get-Rid)".Trim()
-$path = [IO.Path]::GetFullPath("../../bin/$rid/Kodoshi.CodeGenerator.CLI.exe")
-$command = "$path -c Kodoshi.CodeGenerator.CSharp -p ./schema/project.yaml"
+[string] $rid = "$(Get-Rid)".Trim()
+[string] $kodoshiPath = [IO.Path]::GetFullPath([IO.Path]::Join($realScriptDir, "..", "..", "bin", $rid, "kodoshi"))
+[string] $projectPath = [IO.Path]::GetFullPath([IO.Path]::Join($realScriptDir, "schema", "project.yaml"))
+[string] $command = "$kodoshiPath -c Kodoshi.CodeGenerator.CSharp -p $projectPath"
+echo $command
 Invoke-Expression -Command $command

@@ -23,21 +23,40 @@ function Get-Rid
     return "$rid-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower())"
 }
 
+function CreateShellScript
+{
+    if ($IsLinux)
+    {
+        New-Item -ItemType SymbolicLink -Path "kodoshi" -Target "Kodoshi.CodeGenerator.CLI"
+    }
+    elseif ($IsWindows)
+    {
+        New-Item -ItemType SymbolicLink -Path "kodoshi" -Target "Kodoshi.CodeGenerator.CLI.exe"
+    }
+    else
+    {
+        throw "Invalid OS"
+    }
+}
+
 function Build
 {
     [string] $realScriptDir = [IO.Path]::GetFullPath($scriptDir)
     [string] $rid = "$(Get-Rid)".Trim()
-    [string] $binPath = "$realScriptDir/bin/$rid"
-    [string] $genPath = "$realScriptDir/bin/$rid/CodeGenerators"
+    [string] $binPath = [IO.Path]::Join($realScriptDir, "bin", $rid)
+    [string] $genPath = [IO.Path]::Join($binPath, "CodeGenerators")
 
-    Remove-Item -Recurse -Force $binPath
+    Remove-Item -Recurse -Force $binPath -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Path $binPath -Force
     New-Item -ItemType Directory -Path $genPath -Force
 
-    cd CommandLineInterface/Kodoshi.CodeGenerator.CLI
+    cd $binPath
+    CreateShellScript
+
+    Set-Location ([IO.Path]::Join($realScriptDir, "CommandLineInterface", "Kodoshi.CodeGenerator.CLI"))
     dotnet publish -c Release -r $rid -p:PublishSingleFile=true --self-contained true
-    Copy-Item -Path "bin/Release/net7.0/$rid/publish/*" -Recurse -Destination "$binPath"
-    cd $realScriptDir/CodeGenerators
+    Copy-Item -Path ([IO.Path]::Join("bin", "Release", "net7.0", $rid, "publish", "*")) -Recurse -Destination $binPath
+    Set-Location ([IO.Path]::Join($realScriptDir, "CodeGenerators"))
     $codeGeneratorFolders = Get-ChildItem -Path . -Directory -Force -ErrorAction SilentlyContinue | Select-Object FullName
     foreach ($folder in $codeGeneratorFolders)
     {
@@ -45,14 +64,15 @@ function Build
         $folderName = [IO.Path]::GetFileName($path)
         try
         {
-            cd $path
+            Set-Location $path
             dotnet publish -c Release -r $rid
-            New-Item -ItemType Directory -Path "$genPath/$folderName" -Force
-            Copy-Item -Path "bin/Release/netstandard2.1/$rid/publish/*" -Recurse -Destination "$genPath/$folderName"
+            $targetPath = [IO.Path]::Join($genPath, $folderName)
+            New-Item -ItemType Directory -Path $targetPath -Force
+            Copy-Item -Path ([IO.Path]::Join("bin", "Release", "netstandard2.1", $rid, "publish", "*")) -Recurse -Destination $targetPath
         }
         finally
         {
-            cd $scriptDir/CodeGenerators
+            Set-Location ([IO.Path]::Join($realScriptDir, "CodeGenerators"))
         }
     }
 }
