@@ -36,9 +36,9 @@ function CreateCommand
     {
         $commandFileName = "kodoshi"
         $content = @"
-#!/usr/bin/bash
-SCRIPT_DIR=$\( cd -- "$\( dirname -- "$\{BASH_SOURCE[0]\}" \)" &> /dev/null && pwd \)
-SCRIPT_DIR/../Kodoshi.CodeGenerator.CLI "$@"
+#!/usr/bin/env bash
+SCRIPT_DIR=`$( cd -- "`$( dirname -- "`${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+`$SCRIPT_DIR/../Kodoshi.CodeGenerator.CLI "`$@"
 "@
         $additionalCommand = "chmod a+x kodoshi"
     }
