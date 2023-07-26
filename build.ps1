@@ -23,19 +23,42 @@ function Get-Rid
     return "$rid-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower())"
 }
 
-function CreateShellScript
+function CreateCommand
 {
+    [string] $targetName
+    [string] $commandFileName
+    [string] $content
+    [string] $additionalCommand
     if ($IsLinux)
     {
-        New-Item -ItemType SymbolicLink -Path "kodoshi" -Target "Kodoshi.CodeGenerator.CLI"
+        $commandFileName = "kodoshi"
+        $content = @"
+#!/usr/bin/bash
+SCRIPT_DIR=$\( cd -- "$\( dirname -- "$\{BASH_SOURCE[0]\}" \)" &> /dev/null && pwd \)
+SCRIPT_DIR/Kodoshi.CodeGenerator.CLI "$@"
+"@
+        $additionalCommand = "chmod a+x kodoshi"
     }
     elseif ($IsWindows)
     {
-        New-Item -ItemType SymbolicLink -Path "kodoshi" -Target "Kodoshi.CodeGenerator.CLI.exe"
+        $commandFileName = "kodoshi.cmd"
+        $content = @"
+@echo off
+setlocal
+"%~dp0\Kodoshi.CodeGenerator.CLI.exe" %*
+endlocal
+"@
     }
     else
     {
         throw "Invalid OS"
+    }
+
+    New-Item $commandFileName
+    Set-Content $commandFileName ($content.Trim())
+    if ($additionalCommand)
+    {
+        Invoke-Expression -Command $additionalCommand
     }
 }
 
@@ -50,12 +73,13 @@ function Build
     New-Item -ItemType Directory -Path $binPath -Force
     New-Item -ItemType Directory -Path $genPath -Force
 
-    cd $binPath
-    CreateShellScript
-
     Set-Location ([IO.Path]::Join($realScriptDir, "CommandLineInterface", "Kodoshi.CodeGenerator.CLI"))
     dotnet publish -c Release -r $rid -p:PublishSingleFile=true --self-contained true
     Copy-Item -Path ([IO.Path]::Join("bin", "Release", "net7.0", $rid, "publish", "*")) -Recurse -Destination $binPath
+
+    Set-Location $binPath
+    CreateCommand
+
     Set-Location ([IO.Path]::Join($realScriptDir, "CodeGenerators"))
     $codeGeneratorFolders = Get-ChildItem -Path . -Directory -Force -ErrorAction SilentlyContinue | Select-Object FullName
     foreach ($folder in $codeGeneratorFolders)
