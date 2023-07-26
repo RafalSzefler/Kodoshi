@@ -24,7 +24,7 @@ function Get-Rid
 }
 
 [string] $rid = "$(Get-Rid)".Trim()
-[string] $kodoshiPath = [IO.Path]::GetFullPath([IO.Path]::Join($realScriptDir, "..", "..", "bin", $rid, "kodoshi"))
+[string] $kodoshiPath = [IO.Path]::GetFullPath([IO.Path]::Join($realScriptDir, "..", "..", "bin", $rid, "bin", "kodoshi"))
 [string] $projectPath = [IO.Path]::GetFullPath([IO.Path]::Join($realScriptDir, "schema", "project.yaml"))
 [string] $command = "$kodoshiPath -c Kodoshi.CodeGenerator.CSharp -p $projectPath"
 echo $command

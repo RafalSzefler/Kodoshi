@@ -25,6 +25,9 @@ function Get-Rid
 
 function CreateCommand
 {
+    New-Item -ItemType Directory -Path bin -Force
+    Set-Location bin
+
     [string] $targetName
     [string] $commandFileName
     [string] $content
@@ -35,7 +38,7 @@ function CreateCommand
         $content = @"
 #!/usr/bin/bash
 SCRIPT_DIR=$\( cd -- "$\( dirname -- "$\{BASH_SOURCE[0]\}" \)" &> /dev/null && pwd \)
-SCRIPT_DIR/Kodoshi.CodeGenerator.CLI "$@"
+SCRIPT_DIR/../Kodoshi.CodeGenerator.CLI "$@"
 "@
         $additionalCommand = "chmod a+x kodoshi"
     }
@@ -45,7 +48,7 @@ SCRIPT_DIR/Kodoshi.CodeGenerator.CLI "$@"
         $content = @"
 @echo off
 setlocal
-"%~dp0\Kodoshi.CodeGenerator.CLI.exe" %*
+"%~dp0\..\Kodoshi.CodeGenerator.CLI.exe" %*
 endlocal
 "@
     }
