@@ -248,10 +248,20 @@ namespace NAMESPACE
         var code = @"
 namespace KodoshiGenerated.Core
 {
-    public readonly struct SerializerCollectionBuilder
+    public sealed class SerializerCollectionBuilder
     {
+        private Kodoshi.Core.IDefaultValuesCollection? _defaultValuesCollection = null;
+
+        public SerializerCollectionBuilder SetDefaultValuesCollection(Kodoshi.Core.IDefaultValuesCollection defaultValuesCollection)
+        {
+            this._defaultValuesCollection = defaultValuesCollection;
+            return this;
+        }
+
         public Kodoshi.Core.ISerializerCollection Build()
         {
+            var _defaultValuesCollection = this._defaultValuesCollection ?? new DefaultValuesCollectionBuilder().Build();
+
             var _serializers = new System.Collections.Concurrent.ConcurrentDictionary<System.Type, object>();
             var _numericSerializer = new Kodoshi.Core.BuiltIns.NumericSerializer();
             var _boolSerializer = new Kodoshi.Core.BuiltIns.BoolSerializer(_numericSerializer);
@@ -276,8 +286,6 @@ namespace KodoshiGenerated.Core
             _serializers[typeof(float)] = _floatSerializer;
             _serializers[typeof(double)] = _doubleSerializer;
             _serializers[typeof(System.Guid)] = _guidSerializer;
-
-            var _defaultValuesCollection = new DefaultValuesCollectionBuilder().Build();
 
             var _builders = new System.Collections.Generic.Dictionary<System.Type, System.Func<System.Type[], SerializerCollection, object>>();
             _builders[typeof(Kodoshi.Core.ReadOnlyArray<>)] = (_types, _ser) =>
@@ -304,7 +312,8 @@ namespace KodoshiGenerated.Core
         var newNmspc = NamespaceDeclaration(ParseName(_context.CoreNamespace))
             .WithMembers(nmspc.Members)
             .WithNamespaceKeyword(Helpers.TopComment);
-        var block = ((newNmspc.Members.First() as StructDeclarationSyntax)!.Members.First() as MethodDeclarationSyntax)!.Body!.Statements.Where(x => x is BlockSyntax).Single();
+        var block = ((newNmspc.Members.First() as ClassDeclarationSyntax)!.Members
+            .Where(x => x is MethodDeclarationSyntax m && m.Identifier.ToFullString() == "Build").First() as MethodDeclarationSyntax)!.Body!.Statements.Where(x => x is BlockSyntax).Single();
         var newBlock = Block(List(BuildSerializerStatements()));
         newNmspc = newNmspc.ReplaceNode(block, newBlock);
         return unit.ReplaceNode(nmspc, newNmspc);

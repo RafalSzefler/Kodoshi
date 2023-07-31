@@ -40,6 +40,9 @@ internal sealed class RPCBuilderFileGenerator
     {
         var allInterfaces = string.Join(", ", _intputContext.Project.Services.Select(
             x => $"typeof({_helpers.TransformServiceDefinitionToInterfaceSyntax(x)})"));
+
+        var requestType = _helpers.TransformModelDefinitionToSyntax(_context.RequestsTag!).ToFullString();
+
         var code = $@"
 namespace NAMESPACE
 {{
@@ -83,8 +86,20 @@ namespace NAMESPACE
 
         public void ApplyToServiceCollection(Microsoft.Extensions.DependencyInjection.IServiceCollection _serviceCollection)
         {{
-            var _serializersCollection = new {_context.CoreNamespace}.SerializerCollectionBuilder()
+            var _defaultValuesCollection = new {_context.CoreNamespace}.DefaultValuesCollectionBuilder()
                 .Build();
+
+            System.Threading.Tasks.Task.Run(() => {{
+                _defaultValuesCollection.GetDefaultValue<{requestType}>();
+            }});
+
+            var _serializersCollection = new {_context.CoreNamespace}.SerializerCollectionBuilder()
+                .SetDefaultValuesCollection(_defaultValuesCollection)
+                .Build();
+
+            System.Threading.Tasks.Task.Run(() => {{
+                _serializersCollection.GetSerializer<{requestType}>();
+            }});
 
             Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<Kodoshi.Core.ISerializerCollection>(_serviceCollection, _serializersCollection);
             if (_scannedTypes is not null)
