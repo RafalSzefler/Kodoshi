@@ -16,6 +16,7 @@ namespace Kodoshi.CodeGenerator.InputLoader.AST
         KEY_VALUE_PAIR = 9,
         NUMBER = 10,
         NUMBER_ARRAY = 11,
+        MATERIALIZED_MODELS = 12,
     }
 
     internal abstract class ASTNode
@@ -199,6 +200,17 @@ namespace Kodoshi.CodeGenerator.InputLoader.AST
             Input = input;
             Output = output;
             Id = id;
+        }
+    }
+
+    internal sealed class ASTMaterializedModels : ASTStatement
+    {
+        public IReadOnlyList<ASTReference> References { get; }
+
+        public ASTMaterializedModels(IReadOnlyList<ASTReference> references)
+            : base(ASTKind.MATERIALIZED_MODELS)
+        {
+            References = references;
         }
     }
 }

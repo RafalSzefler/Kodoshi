@@ -59,22 +59,30 @@ internal sealed class ASTToProjectConverter
         SortTopologically();
         var models = BuildModels();
         var services = BuildServices();
+        var materializedModels = BuildMaterializedModels();
         var hash = CalculateHash(
             _settings.ProjectName!,
             _settings.Version!,
             models,
-            services);
+            services,
+            materializedModels);
         var project = new Project(
             _settings.ProjectName!,
             _settings.Version!,
             hash,
             models,
-            services);
+            services,
+            materializedModels);
         ValidateProject(project);
         return project;
     }
 
-    private static string CalculateHash(string projectName, string projectVersion, IReadOnlyList<ModelDefinition> models, IReadOnlyList<ServiceDefinition> services)
+    private static string CalculateHash(
+            string projectName,
+            string projectVersion,
+            IReadOnlyList<ModelDefinition> models,
+            IReadOnlyList<ServiceDefinition> services,
+            IReadOnlyList<MessageReference> materializedModels)
     {
         using (var hash = SHA256.Create())
         {
@@ -106,6 +114,7 @@ internal sealed class ASTToProjectConverter
             updateString(projectName);
             updateString(projectVersion);
 
+            // Update models
             {
                 var length = models.Count;
                 updateInt(length);
@@ -198,9 +207,10 @@ internal sealed class ASTToProjectConverter
                 }
             }
 
+            // Update services
             {
                 var length = services.Count;
-                updateInt(services.Count);
+                updateInt(length);
 
                 for (var i = 0; i < length; i++)
                 {
@@ -210,6 +220,18 @@ internal sealed class ASTToProjectConverter
                     updateInt(service.Id);
                     updateReference(service.Input);
                     updateReference(service.Output);
+                }
+            }
+
+            // Update materialized models
+            {
+                var length = materializedModels.Count;
+                updateInt(length);
+                for (var i = 0; i < length; i++)
+                {
+                    var materializedModel = materializedModels[i];
+                    updateString("^MM^");
+                    updateReference(materializedModel);
                 }
             }
 
@@ -462,9 +484,12 @@ internal sealed class ASTToProjectConverter
                     }
                 }
 
-                if (foundMatch) return;
+                if (!foundMatch)
+                {
+                    throw new ParsingException($"Invalid reference {@ref.Identifier}");
+                }
 
-                throw new ParsingException($"Invalid reference {@ref.Identifier}");
+                return;
             }
             default: break;
         }
@@ -525,6 +550,7 @@ internal sealed class ASTToProjectConverter
                     _currentGenerics = oldGenerics;
                     break;
                 }
+                case ASTKind.MATERIALIZED_MODELS: break;
                 default: throw new NotImplementedException();
             }
         }
@@ -741,5 +767,10 @@ internal sealed class ASTToProjectConverter
                 astService.Id);
         }
         return result;
+    }
+
+    private IReadOnlyList<MessageReference> BuildMaterializedModels()
+    {
+        return Array.Empty<MessageReference>();
     }
 }
