@@ -46,7 +46,20 @@ namespace Kodoshi.CodeGenerator.InputLoader
         [Production("statement : tag_non_template")]
         [Production("statement : namespace")]
         [Production("statement : service")]
+        [Production("statement : materialized_model")]
         public AST.ASTNode NamespaceStatement(AST.ASTNode @namespace) => @namespace;
+
+        [Production("materialized_model : KEYWORD_MATERIALIZED[d] type_reference (SYMBOL_COMMA[d] type_reference)* SYMBOL_SEMICOLON[d]")]
+        public AST.ASTNode MaterializedModel(AST.ASTReference reference, List<Group<ExpressionToken, AST.ASTNode>> otherReferences)
+        {
+            var references = new List<AST.ASTReference>(otherReferences.Count+1);
+            references.Add(reference);
+            foreach (var otherRef in otherReferences)
+            {
+                references.Add((AST.ASTReference)otherRef.Value(0));
+            }
+            return new AST.ASTMaterializedModels(references);
+        }
 
         [Production("type_reference : id")]
         public AST.ASTNode TypeReferenceNonGeneric(AST.ASTName @namespace) => new AST.ASTReference(@namespace.Value, Array.Empty<AST.ASTReference>());

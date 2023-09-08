@@ -28,4 +28,6 @@ internal sealed class TwoWayDictionary<TKey, TValue>
     public bool TryGetByValue(TValue value, out TKey result) => _backward.TryGetValue(value, out result);
 
     public IEnumerable<KeyValuePair<TKey, TValue>> Items() => _forward;
+
+    public int Count => _forward.Count;
 }
