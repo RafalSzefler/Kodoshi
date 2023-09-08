@@ -29,9 +29,9 @@ internal sealed class ModelsFileGenerator
     {
         await Task.Yield();
 
-        var topNodes = new List<SyntaxNode>(2);
+        var topNodes = new List<MemberDeclarationSyntax>(2);
 
-        var namespaceNodes = new List<SyntaxNode>();
+        var namespaceNodes = new List<MemberDeclarationSyntax>();
 
         var lastNamespaceName = _intputContext.Project.Models[0].FullName.Namespace;
 
@@ -116,7 +116,7 @@ internal sealed class ModelsFileGenerator
         await file.Write(result, ct);
     }
 
-    public IEnumerable<SyntaxNode> BuildNodesFromTag(
+    public IEnumerable<MemberDeclarationSyntax> BuildNodesFromTag(
         ModelDefinition model,
         IReadOnlyList<TagFieldDefinition> tagFields,
         IReadOnlyList<TemplateArgumentReference>? templateArguments)
@@ -746,7 +746,7 @@ internal sealed class ModelsFileGenerator
                                         SyntaxFactory.SingletonSeparatedList<TypeSyntax>(baseName))))))))
                 .WithMembers(SyntaxFactory.List<MemberDeclarationSyntax>(structMembers));
 
-            return new SyntaxNode[] { nongenericClass, structDeclaration };
+            return new MemberDeclarationSyntax[] { nongenericClass, structDeclaration };
         }
         else
         {
@@ -763,7 +763,7 @@ internal sealed class ModelsFileGenerator
                                     SyntaxFactory.TypeArgumentList(
                                         SyntaxFactory.SingletonSeparatedList<TypeSyntax>(baseName))))))))
                 .WithMembers(SyntaxFactory.List<MemberDeclarationSyntax>(nongenericMembers));
-            return new SyntaxNode[] { structDeclaration };
+            return new MemberDeclarationSyntax[] { structDeclaration };
         }
     }
 
@@ -799,7 +799,7 @@ internal sealed class ModelsFileGenerator
             .WithSemicolonToken(
                 SyntaxFactory.Token(SyntaxKind.SemicolonToken))));
 
-    private SyntaxNode BuildNodeFromMessage(
+    private MemberDeclarationSyntax BuildNodeFromMessage(
         ModelDefinition model,
         IReadOnlyList<MessageFieldDefinition> fields,
         IReadOnlyList<TemplateArgumentReference>? templateArguments)

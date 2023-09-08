@@ -510,7 +510,7 @@ namespace KodoshiGenerated.Core
 
     private CompilationUnitSyntax BuildSerializersFile()
     {
-        var topNodes = new List<SyntaxNode>(_intputContext.Project.Models.Count+2);
+        var topNodes = new List<MemberDeclarationSyntax>(_intputContext.Project.Models.Count+2);
 
         var models = Helpers.Chain(_intputContext.Project.Models, _context.ServicesTags);
         foreach (var model in models)
@@ -526,7 +526,7 @@ namespace KodoshiGenerated.Core
             .WithMembers(SingletonList<MemberDeclarationSyntax>(nmscp));
     }
 
-    private SyntaxNode GenerateSerializer(ModelDefinition model)
+    private MemberDeclarationSyntax GenerateSerializer(ModelDefinition model)
     {
         var serializerName = _modelNameToSerializerNameMap[model.FullName];
         var modelName = _helpers.TransformModelDefinitionToSyntax(model);
