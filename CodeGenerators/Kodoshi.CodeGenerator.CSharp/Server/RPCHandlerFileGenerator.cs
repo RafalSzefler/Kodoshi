@@ -75,8 +75,11 @@ namespace NAMESPACE
             {{
                 _req = await _serializer.DeserializeAsync(_context.Request.BodyReader, _context.RequestAborted).ConfigureAwait(false);
             }}
-            catch (Kodoshi.Core.Exceptions.BaseException)
+            catch (Kodoshi.Core.Exceptions.BaseException exc)
             {{
+                var _logger = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetService<Microsoft.Extensions.Logging.ILogger<RPCHandler>>(_context.RequestServices);
+                if (_logger is not null)
+                    Microsoft.Extensions.Logging.LoggerExtensions.LogWarning(_logger, exc, ""RPCHandler: deserialization error, returning 400."");
                 _context.Response.StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status400BadRequest;
                 return;
             }}
@@ -89,7 +92,7 @@ namespace NAMESPACE
             {{
                 var _logger = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetService<Microsoft.Extensions.Logging.ILogger<RPCHandler>>(_context.RequestServices);
                 if (_logger is not null)
-                    Microsoft.Extensions.Logging.LoggerExtensions.LogError(_logger, exc, ""Unhandled exception on RPC request."");
+                    Microsoft.Extensions.Logging.LoggerExtensions.LogError(_logger, exc, ""RPCHandler: unhandled exception on RPC request."");
                 _context.Response.StatusCode = Microsoft.AspNetCore.Http.StatusCodes.Status500InternalServerError;
                 return;
             }}

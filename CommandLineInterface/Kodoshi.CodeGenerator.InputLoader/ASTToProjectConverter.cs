@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,6 +19,8 @@ internal sealed class ASTToProjectConverter
         = new TwoWayDictionary<ASTNode, Identifier>();
     private readonly TwoWayDictionary<ModelDefinition, Identifier> _modelsByIdentifiers
         = new TwoWayDictionary<ModelDefinition, Identifier>();
+    private readonly List<ModelDefinition> _modelDefinitions
+        = new List<ModelDefinition>();
     private readonly Dictionary<ASTReference, Identifier> _refsByIdentifiers
         = new Dictionary<ASTReference, Identifier>();
     private readonly HashSet<ASTNode> _temporaryMarkings
@@ -28,6 +31,12 @@ internal sealed class ASTToProjectConverter
         = new List<ASTStatement>();
     private readonly List<ASTServiceDefinition> _services
         = new List<ASTServiceDefinition>();
+    private readonly List<ServiceDefinition> _serviceDefinitions
+        = new List<ServiceDefinition>();
+    private readonly List<ASTReference> _materializedModels
+        = new List<ASTReference>();
+    private readonly List<ModelReference> _materializedReferences
+        = new List<ModelReference>();
     private string _currentNamespace = "";
     private IFile _currentFile;
     private ASTBlock _currentBlock;
@@ -57,22 +66,22 @@ internal sealed class ASTToProjectConverter
     {
         FillIdentifiers();
         SortTopologically();
-        var models = BuildModels();
-        var services = BuildServices();
-        var materializedModels = BuildMaterializedModels();
+        BuildModels();
+        BuildServices();
+        BuildMaterializedModels();
         var hash = CalculateHash(
             _settings.ProjectName!,
             _settings.Version!,
-            models,
-            services,
-            materializedModels);
+            _modelDefinitions,
+            _serviceDefinitions,
+            _materializedReferences);
         var project = new Project(
             _settings.ProjectName!,
             _settings.Version!,
             hash,
-            models,
-            services,
-            materializedModels);
+            _modelDefinitions,
+            _serviceDefinitions,
+            _materializedReferences);
         ValidateProject(project);
         return project;
     }
@@ -82,7 +91,7 @@ internal sealed class ASTToProjectConverter
             string projectVersion,
             IReadOnlyList<ModelDefinition> models,
             IReadOnlyList<ServiceDefinition> services,
-            IReadOnlyList<MessageReference> materializedModels)
+            IReadOnlyList<ModelReference> materializedModels)
     {
         using (var hash = SHA256.Create())
         {
@@ -408,6 +417,16 @@ internal sealed class ASTToProjectConverter
                 }
                 break;
             }
+            case ASTKind.MATERIALIZED_MODELS:
+            {
+                var materializedModels = (ASTMaterializedModels)node;
+                foreach (var @ref in materializedModels.References)
+                {
+                    TraverseTopologically(@ref);
+                }
+                _materializedModels.AddRange(materializedModels.References);
+                break;
+            }
             case ASTKind.REFERENCE:
             {
                 var @ref = (ASTReference)node;
@@ -495,9 +514,8 @@ internal sealed class ASTToProjectConverter
         }
     }
 
-    private IReadOnlyList<ModelDefinition> BuildModels()
+    private void BuildModels()
     {
-        var models = new List<ModelDefinition>(_topologicalySortedModels.Count);
         foreach (var stmt in _topologicalySortedModels)
         {
             switch (stmt.Kind)
@@ -521,7 +539,7 @@ internal sealed class ASTToProjectConverter
                     }
                     var def = BuildMessageDefinition(msg);
                     _modelsByIdentifiers.Add(def, def.FullName);
-                    models.Add(def);
+                    _modelDefinitions.Add(def);
                     _currentGenericsMap = oldGenericsMap;
                     _currentGenerics = oldGenerics;
                     break;
@@ -545,7 +563,7 @@ internal sealed class ASTToProjectConverter
                     }
                     var def = BuildTagDefinition(tag);
                     _modelsByIdentifiers.Add(def, def.FullName);
-                    models.Add(def);
+                    _modelDefinitions.Add(def);
                     _currentGenericsMap = oldGenericsMap;
                     _currentGenerics = oldGenerics;
                     break;
@@ -554,7 +572,6 @@ internal sealed class ASTToProjectConverter
                 default: throw new NotImplementedException();
             }
         }
-        return models;
     }
 
     private ModelDefinition BuildTagDefinition(ASTTagDefinition tag)
@@ -751,26 +768,189 @@ internal sealed class ASTToProjectConverter
         }
     }
 
-    private IReadOnlyList<ServiceDefinition> BuildServices()
+    private void BuildServices()
     {
         var count = _services.Count;
-        if (count == 0) return Array.Empty<ServiceDefinition>();
-        var result = new ServiceDefinition[count];
+        if (count == 0) return;
         for (var i = 0; i < count; i++)
         {
             var astService = _services[i];
             var id = _toIdentifiersMap.GetByKey(astService);
-            result[i] = new ServiceDefinition(
+            _serviceDefinitions.Add(new ServiceDefinition(
                 id,
                 Map(astService.Input),
                 Map(astService.Output),
-                astService.Id);
+                astService.Id));
         }
-        return result;
     }
 
-    private IReadOnlyList<MessageReference> BuildMaterializedModels()
+
+    private sealed class ModelReferenceComparer : IEqualityComparer<ModelReference>
     {
-        return Array.Empty<MessageReference>();
+        public bool Equals(ModelReference x, ModelReference y)
+        {
+            if (x is MessageReference xmr && y is MessageReference ymr)
+            {
+                return xmr.Definition.FullName.Equals(ymr.Definition.FullName);
+            }
+
+            if (x is TagReference xt && y is TagReference yt)
+            {
+                return xt.Definition.FullName.Equals(yt.Definition.FullName);
+            }
+
+            bool calculate(Identifier left, Identifier right, IReadOnlyList<ModelReference> leftArgs, IReadOnlyList<ModelReference> rightArgs)
+            {
+                if (!left.Equals(right))
+                {
+                    return false;
+                }
+
+                var c = leftArgs.Count;
+                if (c != rightArgs.Count)
+                {
+                    return false;
+                }
+                for (var i = 0; i < c; i++)
+                {
+                    if (!this.Equals(leftArgs[i], rightArgs[i]))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            if (x is MessageTemplateReference xmtr && y is MessageTemplateReference ymtr)
+                return calculate(xmtr.Definition.FullName, ymtr.Definition.FullName, xmtr.ModelArguments, ymtr.ModelArguments);
+
+            if (x is TagTemplateReference xttr && y is TagTemplateReference yttr)
+                return calculate(xttr.Definition.FullName, yttr.Definition.FullName, xttr.ModelArguments, yttr.ModelArguments);
+
+            return false;
+        }
+
+        public int GetHashCode(ModelReference obj)
+        {
+            if (obj is MessageReference omr) return omr.Definition.FullName.GetHashCode();
+            if (obj is TagReference otr) return otr.Definition.FullName.GetHashCode();
+            int calculate(Identifier id, IEnumerable<ModelReference> refs)
+            {
+                unchecked
+                {
+                    uint hash = 2166136261;
+                    hash = (hash ^ (uint)id.GetHashCode()) * 16777619;
+                    foreach (var arg in refs)
+                    {
+                        hash = (hash ^ (uint)this.GetHashCode(arg)) * 16777619;
+                    }
+                    return (int)hash;
+                }
+            }
+
+            if (obj is MessageTemplateReference omtr) return calculate(omtr.Definition.FullName, omtr.ModelArguments);
+            if (obj is TagTemplateReference ottr) return calculate(ottr.Definition.FullName, ottr.ModelArguments);
+            throw new NotImplementedException();
+        }
+    };
+
+    private void BuildMaterializedModels()
+    {
+        var result = new List<ModelReference>();
+        var seen = new HashSet<ModelReference>(new ModelReferenceComparer());
+        foreach (var model in _modelDefinitions)
+        {
+            switch (model.Kind)
+            {
+                case ModelKind.Message:
+                {
+                    var @ref = new MessageReference((MessageDefinition)model);
+                    ScanModelForMaterial(result, seen, @ref);
+                    break;
+                }
+                case ModelKind.Tag:
+                {
+                    var @ref = new TagReference((TagDefinition)model);
+                    ScanModelForMaterial(result, seen, @ref);
+                    break;
+                }
+                default: break;
+            }
+        }
+
+        foreach (var service in _serviceDefinitions)
+        {
+            ScanModelForMaterial(result, seen, service.Input);
+            ScanModelForMaterial(result, seen, service.Output);
+        }
+
+        foreach (var materializedAst in _materializedModels)
+        {
+            var @ref = Map(materializedAst);
+            ScanModelForMaterial(result, seen, @ref);
+        }
+        
+        _materializedReferences.AddRange(result);
+    }
+
+    private void ScanModelForMaterial(
+            List<ModelReference> result,
+            HashSet<ModelReference> seen,
+            ModelReference @ref)
+    {
+        if (@ref is TemplateArgumentReference) return;
+        if (seen.Contains(@ref)) return;
+        switch (@ref.Kind)
+        {
+            case ModelReferenceKind.Message:
+            {
+                var realRef = (MessageReference)@ref;
+                foreach (var field in realRef.Definition.Fields)
+                {
+                    ScanModelForMaterial(result, seen, field.Type);
+                }
+                break;
+            }
+            case ModelReferenceKind.Tag:
+            {
+                var realRef = (TagReference)@ref;
+                foreach (var field in realRef.Definition.Fields)
+                {
+                    if (field.AdditionalDataType is not null)
+                        ScanModelForMaterial(result, seen, field.AdditionalDataType);
+                }
+                break;
+            }
+            case ModelReferenceKind.MessageTemplate:
+            {
+                var realRef = (MessageTemplateReference)@ref;
+                foreach (var nestedRef in realRef.ModelArguments)
+                {
+                    ScanModelForMaterial(result, seen, nestedRef);
+                }
+                foreach (var field in realRef.Definition.Fields)
+                {
+                    ScanModelForMaterial(result, seen, field.Type);
+                }
+                break;
+            }
+            case ModelReferenceKind.TagTemplate:
+            {
+                var realRef = (TagTemplateReference)@ref;
+                foreach (var nestedRef in realRef.ModelArguments)
+                {
+                    ScanModelForMaterial(result, seen, nestedRef);
+                }
+                foreach (var field in realRef.Definition.Fields)
+                {
+                    if (field.AdditionalDataType is not null)
+                        ScanModelForMaterial(result, seen, field.AdditionalDataType);
+                }
+                break;
+            }
+            default: throw new NotImplementedException();
+        }
+        result.Add(@ref);
+        seen.Add(@ref);
     }
 }

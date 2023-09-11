@@ -49,7 +49,7 @@ namespace Kodoshi.CodeGenerator.InputLoader
         [Production("statement : materialized_model")]
         public AST.ASTNode NamespaceStatement(AST.ASTNode @namespace) => @namespace;
 
-        [Production("materialized_model : KEYWORD_MATERIALIZED[d] type_reference (SYMBOL_COMMA[d] type_reference)* SYMBOL_SEMICOLON[d]")]
+        [Production("materialized_model : KEYWORD_MATERIALIZE[d] type_reference (SYMBOL_COMMA[d] type_reference)* SYMBOL_SEMICOLON[d]")]
         public AST.ASTNode MaterializedModel(AST.ASTReference reference, List<Group<ExpressionToken, AST.ASTNode>> otherReferences)
         {
             var references = new List<AST.ASTReference>(otherReferences.Count+1);
