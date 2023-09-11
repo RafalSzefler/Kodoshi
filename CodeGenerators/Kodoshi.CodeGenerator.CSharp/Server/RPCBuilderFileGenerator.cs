@@ -43,6 +43,14 @@ internal sealed class RPCBuilderFileGenerator
 
         var requestType = _helpers.TransformModelDefinitionToSyntax(_context.RequestsTag!).ToFullString();
 
+        var allDefaults = string.Concat(
+            _intputContext.Project.MaterializedModels
+            .Select(x => $"\n                _defaultValuesCollection.GetDefaultValue<{_helpers.TransformModelReferenceToSyntax(x)}>();"));
+        
+        var allSerializers = string.Concat(
+            _intputContext.Project.MaterializedModels
+            .Select(x => $"\n                _serializersCollection.GetSerializer<{_helpers.TransformModelReferenceToSyntax(x)}>();"));
+
         var code = $@"
 namespace NAMESPACE
 {{
@@ -89,7 +97,7 @@ namespace NAMESPACE
             var _defaultValuesCollection = new {_context.CoreNamespace}.DefaultValuesCollectionBuilder()
                 .Build();
 
-            System.Threading.Tasks.Task.Run(() => {{
+            System.Threading.Tasks.Task.Run(() => {{{allDefaults}
                 _defaultValuesCollection.GetDefaultValue<{requestType}>();
             }});
 
@@ -97,7 +105,7 @@ namespace NAMESPACE
                 .SetDefaultValuesCollection(_defaultValuesCollection)
                 .Build();
 
-            System.Threading.Tasks.Task.Run(() => {{
+            System.Threading.Tasks.Task.Run(() => {{{allSerializers}
                 _serializersCollection.GetSerializer<{requestType}>();
             }});
 

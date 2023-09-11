@@ -19,3 +19,5 @@ service GetStatus
     @input = Request<void>;
     @output = Response<void>;
 }
+
+materialize Request<int32>, Request<uuid>;

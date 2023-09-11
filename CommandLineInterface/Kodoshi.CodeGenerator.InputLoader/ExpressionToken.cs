@@ -25,8 +25,8 @@ namespace Kodoshi.CodeGenerator.InputLoader
         [Lexeme("service")]
         KEYWORD_SERVICE = 105,
 
-        [Lexeme("materialized")]
-        KEYWORD_MATERIALIZED = 106,
+        [Lexeme("materialize")]
+        KEYWORD_MATERIALIZE = 106,
 
         [Lexeme(";")]
         SYMBOL_SEMICOLON = 200,
