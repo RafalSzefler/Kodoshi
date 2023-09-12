@@ -83,16 +83,8 @@ namespace Kodoshi.CodeGenerator.InputLoader
         public AST.ASTNode MessageField(AST.ASTReference type, AST.ASTName name, AST.ASTNumber number)
             => new AST.ASTMessageFieldDefinition(name.Value, type, number.Value);
 
-        [Production("message_template : KEYWORD_MESSAGE_TEMPLATE[d] name SYMBOL_LEFT_ANGLE_BRACKET[d] id (SYMBOL_COMMA[d] id)* SYMBOL_RIGHT_ANGLE_BRACKET[d] SYMBOL_LEFT_CURLY_BRACKET[d] message_field+ SYMBOL_RIGHT_CURLY_BRACKET[d]")]
-        public AST.ASTNode MessageTemplate(AST.ASTName name, AST.ASTName genericArg1, List<Group<ExpressionToken, AST.ASTNode>> genericArgs, List<AST.ASTNode> messageFields)
+        private List<AST.ASTMessageFieldDefinition> ReadMessageFields(List<AST.ASTNode> messageFields)
         {
-            var finalGenericArgs = new List<AST.ASTReference>(genericArgs.Count + 1);
-            var empty = Array.Empty<AST.ASTReference>();
-            finalGenericArgs.Add(new AST.ASTReference(genericArg1.Value, empty));
-            foreach (var genericArg in genericArgs)
-            {
-                finalGenericArgs.Add(new AST.ASTReference(((AST.ASTName)genericArg.Value(0)).Value, empty));
-            }
             var deprecatedFields = new HashSet<int>();
             var foundFields = new HashSet<int>();
             var messageFieldDefs = new List<AST.ASTMessageFieldDefinition>();
@@ -124,6 +116,10 @@ namespace Kodoshi.CodeGenerator.InputLoader
                     foundFields.Add(mfd.Id);
                     messageFieldDefs.Add(mfd);
                 }
+                else
+                {
+                    throw new NotImplementedException();
+                }
             }
 
             var intersection = deprecatedFields.Intersect(foundFields).ToArray();
@@ -132,11 +128,24 @@ namespace Kodoshi.CodeGenerator.InputLoader
                 var ids = string.Join(", ", intersection.OrderBy(x => x).Select(x => x.ToString()));
                 throw new ParsingException($"Ids {ids} are marked as used.");
             }
+            return messageFieldDefs;
+        }
+
+        [Production("message_template : KEYWORD_MESSAGE_TEMPLATE[d] name SYMBOL_LEFT_ANGLE_BRACKET[d] id (SYMBOL_COMMA[d] id)* SYMBOL_RIGHT_ANGLE_BRACKET[d] SYMBOL_LEFT_CURLY_BRACKET[d] message_field+ SYMBOL_RIGHT_CURLY_BRACKET[d]")]
+        public AST.ASTNode MessageTemplate(AST.ASTName name, AST.ASTName genericArg1, List<Group<ExpressionToken, AST.ASTNode>> genericArgs, List<AST.ASTNode> messageFields)
+        {
+            var finalGenericArgs = new List<AST.ASTReference>(genericArgs.Count + 1);
+            var empty = Array.Empty<AST.ASTReference>();
+            finalGenericArgs.Add(new AST.ASTReference(genericArg1.Value, empty));
+            foreach (var genericArg in genericArgs)
+            {
+                finalGenericArgs.Add(new AST.ASTReference(((AST.ASTName)genericArg.Value(0)).Value, empty));
+            }
 
             return new AST.ASTMessageDefinition(
                 name.Value,
                 finalGenericArgs,
-                messageFieldDefs);
+                ReadMessageFields(messageFields));
         }
 
         [Production("message_non_template : KEYWORD_MESSAGE[d] name SYMBOL_LEFT_CURLY_BRACKET[d] message_field+ SYMBOL_RIGHT_CURLY_BRACKET[d]")]
@@ -144,7 +153,58 @@ namespace Kodoshi.CodeGenerator.InputLoader
             => new AST.ASTMessageDefinition(
                 name.Value,
                 Array.Empty<AST.ASTReference>(),
-                messageFields.Cast<AST.ASTMessageFieldDefinition>().ToArray());
+                ReadMessageFields(messageFields));
+
+        private List<AST.ASTTagFieldDefinition> ReadTagFields(List<AST.ASTNode> tagFields)
+        {
+            var deprecatedValues = new HashSet<int>();
+            var foundFields = new HashSet<int>();
+            var tagFieldDefs = new List<AST.ASTTagFieldDefinition>();
+            foreach (var node in tagFields)
+            {
+                if (node is AST.ASTKeyValuePair kvp)
+                {
+                    if (kvp.Key != "used_values")
+                    {
+                        throw new ParsingException($"Option [{kvp.Key}] not allowed. Allowed options are: used_values.");
+                    }
+
+                    if (kvp.Value is AST.ASTNumber num)
+                    {
+                        deprecatedValues.Add(num.Value);
+                    }
+                    else if (kvp.Value is AST.ASTNumberArray arr)
+                    {
+                        foreach (var value in arr.Values)
+                            deprecatedValues.Add(value);
+                    }
+                    else
+                    {
+                        throw new ParsingException($"Option [{kvp.Key}] requires number or number array as value.");
+                    }
+                }
+                else if (node is AST.ASTTagFieldDefinition mfd)
+                {
+                    foundFields.Add(mfd.Value);
+                    tagFieldDefs.Add(mfd);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            var intersection = deprecatedValues.Intersect(foundFields).ToArray();
+            if (intersection.Length > 0)
+            {
+                var ids = string.Join(", ", intersection.OrderBy(x => x).Select(x => x.ToString()));
+                throw new ParsingException($"Values {ids} are marked as used.");
+            }
+            return tagFieldDefs;
+        }
+
+        [Production("tag_field : key_value_pair")]
+        public AST.ASTNode KVPTagField(AST.ASTNode node) => node;
 
         [Production("tag_field : name SYMBOL_EQUALS[d] number SYMBOL_SEMICOLON[d]")]
         public AST.ASTNode TagField(AST.ASTName name, AST.ASTNumber number)
@@ -167,7 +227,7 @@ namespace Kodoshi.CodeGenerator.InputLoader
             return new AST.ASTTagDefinition(
                 name.Value,
                 finalGenericArgs,
-                tagFields.Cast<AST.ASTTagFieldDefinition>().ToArray());
+                ReadTagFields(tagFields));
         }
 
         [Production("tag_non_template : KEYWORD_TAG[d] name SYMBOL_LEFT_CURLY_BRACKET[d] tag_field+ SYMBOL_RIGHT_CURLY_BRACKET[d]")]
@@ -175,7 +235,7 @@ namespace Kodoshi.CodeGenerator.InputLoader
             => new AST.ASTTagDefinition(
                 name.Value,
                 Array.Empty<AST.ASTReference>(),
-                tagFields.Cast<AST.ASTTagFieldDefinition>().ToArray());
+                ReadTagFields(tagFields));
 
         [Production("number_array : number (SYMBOL_COMMA[d] number)+")]
         public AST.ASTNode NumberArray(AST.ASTNumber number, List<Group<ExpressionToken, AST.ASTNode>> items)
