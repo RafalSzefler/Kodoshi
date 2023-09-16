@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Kodoshi.Core
@@ -16,9 +17,26 @@ namespace Kodoshi.Core
             = new ReadOnlyMap<TKey, TValue>(new Dictionary<TKey, TValue>());
 
         private readonly Dictionary<TKey, TValue> _instance;
+        private readonly int _hash;
         internal ReadOnlyMap(Dictionary<TKey, TValue> instance)
         {
             this._instance = instance;
+            this._hash = CalculateHashCode(instance);
+        }
+
+        private static int CalculateHashCode(Dictionary<TKey, TValue> dict)
+        {
+            unchecked
+            {
+                uint hash = 2166136261;
+                var keys = dict.Keys.OrderBy(static x => x);
+                foreach (var key in keys)
+                {
+                    hash = (hash ^ Utils.CalculateHashCode(key)) * 16777619;
+                    hash = (hash ^ Utils.CalculateHashCode(dict[key])) * 16777619;
+                }
+                return (int)hash;
+            }
         }
 
         public TValue this[TKey key] => _instance[key];
@@ -60,22 +78,7 @@ namespace Kodoshi.Core
 
         public override bool Equals(object? obj) => (obj is ReadOnlyMap<TKey, TValue> map) && Equals(map);
 
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                uint hash = 2166136261;
-                var e = _instance.GetEnumerator();
-                while (e.MoveNext())
-                {
-                    var curr = e.Current;
-                    hash = (hash ^ Utils.CalculateHashCode(curr.Key)) * 16777619;
-                    hash = (hash ^ Utils.CalculateHashCode(curr.Value)) * 16777619;
-                }
-
-                return (int)hash;
-            }
-        }
+        public override int GetHashCode() => _hash;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyDictionary<TKey, TValue> AsDict() => _instance;
