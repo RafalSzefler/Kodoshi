@@ -1,0 +1,16 @@
+name: kodoshi_core
+description: Kodoshi Core lib.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.1.2
+
+# Add regular dependencies here.
+dependencies:
+  async: ^2.11.0
+  # http: ^1.1.0
+
+dev_dependencies:
+  lints: ^2.0.0
+  test: ^1.21.0
